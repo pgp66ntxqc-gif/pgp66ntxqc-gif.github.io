@@ -1,0 +1,3631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>掼蛋单人练习器 MVP</title>
+  <style>
+    :root {
+      --bg: #f3f6f8;
+      --surface: #ffffff;
+      --surface-strong: #eef4f1;
+      --ink: #18212a;
+      --muted: #687684;
+      --line: #d7e0e5;
+      --green: #247a5b;
+      --green-soft: #e3f4ec;
+      --blue: #2f6da8;
+      --blue-soft: #e8f1fb;
+      --red: #c94a42;
+      --red-soft: #fae9e7;
+      --gold: #b87a17;
+      --gold-soft: #fbf0d9;
+      --shadow: 0 18px 45px rgba(24, 33, 42, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.5;
+      background:
+        linear-gradient(rgba(47, 109, 168, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(47, 109, 168, 0.07) 1px, transparent 1px),
+        linear-gradient(135deg, #eef4f7 0%, #f7f4ed 48%, #edf6f1 100%);
+      background-size: 32px 32px, 32px 32px, cover;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(24, 33, 42, 0.12);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+    }
+
+    .page {
+      width: min(1480px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0 38px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 14px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 880px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .session-badge {
+      display: grid;
+      gap: 4px;
+      min-width: 184px;
+      padding: 13px 15px;
+      border: 1px solid rgba(36, 122, 91, 0.24);
+      border-radius: var(--radius);
+      background: var(--green-soft);
+      color: var(--green);
+      text-align: right;
+    }
+
+    .session-badge strong {
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .session-badge span {
+      color: #4a675a;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      min-height: 90px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 28px rgba(24, 33, 42, 0.08);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 6px;
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 330px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .sidebar,
+    .workbench {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 16px;
+      display: grid;
+      gap: 15px;
+      padding: 15px;
+    }
+
+    .panel-title {
+      margin: 0 0 8px;
+      color: #34424e;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .mode-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mode-btn {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      min-height: 54px;
+      padding: 10px 12px;
+      color: var(--ink);
+      background: #f5f8fa;
+      border: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .mode-btn strong,
+    .mode-btn span {
+      min-width: 0;
+    }
+
+    .mode-btn span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .mode-btn.active {
+      color: var(--green);
+      background: var(--green-soft);
+      border-color: rgba(36, 122, 91, 0.3);
+    }
+
+    .mode-btn .pill {
+      min-width: 56px;
+      padding: 4px 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      color: inherit;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      color: #43515d;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: #ffffff;
+      outline: none;
+    }
+
+    select:focus,
+    input[type="number"]:focus {
+      border-color: rgba(47, 109, 168, 0.65);
+      box-shadow: 0 0 0 3px rgba(47, 109, 168, 0.12);
+    }
+
+    .primary-action {
+      min-height: 44px;
+      width: 100%;
+      padding: 10px 13px;
+      color: #ffffff;
+      background: var(--green);
+    }
+
+    .ghost-action {
+      min-height: 40px;
+      padding: 9px 12px;
+      color: var(--blue);
+      background: var(--blue-soft);
+      border: 1px solid rgba(47, 109, 168, 0.24);
+    }
+
+    .danger-action {
+      color: var(--red);
+      background: var(--red-soft);
+      border: 1px solid rgba(201, 74, 66, 0.22);
+    }
+
+    .goals {
+      display: grid;
+      gap: 8px;
+    }
+
+    .goal {
+      display: grid;
+      gap: 6px;
+      padding: 10px;
+      border-radius: var(--radius);
+      background: #f6f8f7;
+      border: 1px solid #e1e8e4;
+    }
+
+    .goal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: #34424e;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .bar {
+      height: 8px;
+      border-radius: 999px;
+      background: #e3eaee;
+      overflow: hidden;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      width: var(--value);
+      border-radius: inherit;
+      background: var(--green);
+    }
+
+    .history {
+      display: grid;
+      gap: 7px;
+      max-height: 255px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .history-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 10px;
+      border-radius: var(--radius);
+      background: #f6f8fa;
+      border: 1px solid #e5ecef;
+      font-size: 13px;
+    }
+
+    .history-row strong,
+    .history-row span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-row span {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .workbench {
+      min-height: 650px;
+      overflow: hidden;
+    }
+
+    .work-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(238, 244, 241, 0.72);
+    }
+
+    .work-head h2 {
+      margin: 0;
+      font-size: clamp(20px, 3vw, 30px);
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .work-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .round-counter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .counter-chip {
+      min-height: 36px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      color: #43515d;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .question {
+      display: grid;
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .empty-state,
+    .result-state {
+      display: grid;
+      place-items: center;
+      min-height: 470px;
+      text-align: center;
+    }
+
+    .empty-box,
+    .result-box {
+      width: min(620px, 100%);
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: 0 10px 28px rgba(24, 33, 42, 0.08);
+    }
+
+    .empty-box h3,
+    .result-box h3 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    .empty-box p,
+    .result-box p {
+      margin: 0 0 16px;
+      color: var(--muted);
+    }
+
+    .prompt-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+      color: #34424e;
+      font-weight: 900;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--gold-soft);
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .hand-panel {
+      display: grid;
+      gap: 10px;
+      min-height: 220px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfcfd;
+    }
+
+    .guide-state {
+      display: grid;
+      gap: 16px;
+    }
+
+    .guide-band {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+      gap: 16px;
+      align-items: stretch;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.96), rgba(232, 241, 251, 0.84)),
+        var(--surface);
+    }
+
+    .guide-copy {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .guide-copy h3 {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .guide-copy p {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .guide-steps {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      padding: 14px;
+      border: 1px solid rgba(47, 109, 168, 0.2);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .guide-step {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      color: #34424e;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .guide-step b {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .rule-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .rule-tile {
+      min-height: 116px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfcfd;
+    }
+
+    .rule-tile strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #243746;
+      font-size: 15px;
+    }
+
+    .rule-tile p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .mini-hand {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: 9px 0 8px;
+      min-height: 38px;
+      align-items: center;
+    }
+
+    .mini-card {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 30px;
+      aspect-ratio: 0.72;
+      border: 1px solid #ccd6dc;
+      border-radius: 5px;
+      background: #fff;
+      box-shadow: 0 4px 9px rgba(24, 33, 42, 0.1);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .mini-card em {
+      position: absolute;
+      right: 3px;
+      bottom: 2px;
+      font-size: 9px;
+      font-style: normal;
+    }
+
+    .mini-card.red {
+      color: var(--red);
+    }
+
+    .mini-card.black {
+      color: #1d2933;
+    }
+
+    .mini-card.joker {
+      color: #fff;
+      background: #243746;
+      border-color: #243746;
+      font-size: 10px;
+    }
+
+    .tip-strip {
+      display: grid;
+      gap: 6px;
+      padding: 12px;
+      border-left: 4px solid var(--gold);
+      border-radius: var(--radius);
+      background: var(--gold-soft);
+      color: #533705;
+      font-weight: 800;
+    }
+
+    .tip-strip span {
+      color: #78510a;
+      font-size: 13px;
+    }
+
+    .hand-panel h3 {
+      margin: 0;
+      color: #34424e;
+      font-size: 15px;
+    }
+
+    .hand {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-content: flex-start;
+    }
+
+    .card {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: clamp(42px, 5vw, 58px);
+      aspect-ratio: 0.72;
+      padding: 5px;
+      border: 1px solid #ccd6dc;
+      border-radius: 7px;
+      background:
+        linear-gradient(145deg, #ffffff 0%, #f8fafb 70%, #e9eef1 100%);
+      box-shadow: 0 5px 12px rgba(24, 33, 42, 0.12);
+      font-weight: 900;
+      user-select: none;
+    }
+
+    .card b {
+      font-size: clamp(15px, 2.1vw, 21px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .card em {
+      position: absolute;
+      right: 5px;
+      bottom: 4px;
+      font-size: 14px;
+      font-style: normal;
+      line-height: 1;
+    }
+
+    .card.red {
+      color: var(--red);
+    }
+
+    .card.black {
+      color: #1d2933;
+    }
+
+    .card.level {
+      border-color: rgba(184, 122, 23, 0.64);
+      background:
+        linear-gradient(145deg, #fffdf7 0%, #fff4d9 100%);
+    }
+
+    .card.joker {
+      color: #ffffff;
+      background:
+        linear-gradient(145deg, #1d2933 0%, #43515d 100%);
+      border-color: #1d2933;
+    }
+
+    .card.joker.small {
+      background:
+        linear-gradient(145deg, #2f6da8 0%, #17476f 100%);
+    }
+
+    .large-card {
+      width: min(138px, 36vw);
+      margin: 0 auto;
+    }
+
+    .large-card b {
+      font-size: clamp(34px, 10vw, 54px);
+    }
+
+    .large-card em {
+      right: 12px;
+      bottom: 10px;
+      font-size: 30px;
+    }
+
+    .answer-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .answer-btn {
+      min-height: 46px;
+      min-width: 132px;
+      padding: 11px 14px;
+      color: #ffffff;
+      background: var(--blue);
+    }
+
+    .answer-btn.secondary {
+      color: var(--green);
+      background: var(--green-soft);
+      border: 1px solid rgba(36, 122, 91, 0.24);
+    }
+
+    .answer-btn.gold {
+      color: #3c2604;
+      background: #edc876;
+    }
+
+    .battle-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .table-map {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, #edf6f1 0%, #f9fbfc 100%);
+    }
+
+    .seat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      align-items: center;
+    }
+
+    .seat {
+      min-height: 76px;
+      padding: 10px;
+      border: 1px solid #d9e4de;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.76);
+      text-align: center;
+    }
+
+    .seat.active {
+      border-color: #ffe29a;
+      box-shadow: 0 0 0 3px rgba(255, 226, 154, 0.18), 0 0 22px rgba(255, 226, 154, 0.28);
+    }
+
+    .seat strong {
+      display: block;
+      color: #243746;
+      font-size: 14px;
+    }
+
+    .seat span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .seat.me {
+      background: var(--green-soft);
+      border-color: rgba(36, 122, 91, 0.28);
+    }
+
+    .scenario-panel {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfcfd;
+    }
+
+    .scenario-panel h3 {
+      margin: 0;
+      color: #243746;
+      font-size: 16px;
+    }
+
+    .scenario-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .choice-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .choice-btn {
+      min-height: 54px;
+      padding: 11px 13px;
+      color: #243746;
+      background: #f5f8fa;
+      border: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .battle-switch {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .battle-switch button {
+      min-height: 40px;
+      padding: 8px 10px;
+      color: #43515d;
+      background: #f5f8fa;
+      border: 1px solid var(--line);
+    }
+
+    .battle-switch button.active {
+      color: #fff;
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .play-stack {
+      display: grid;
+      gap: 9px;
+    }
+
+    .play-card {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .play-card strong {
+      display: block;
+      color: #243746;
+      font-size: 14px;
+    }
+
+    .play-card span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .match-log {
+      display: grid;
+      gap: 6px;
+      max-height: 168px;
+      overflow: auto;
+      padding-right: 3px;
+    }
+
+    .match-log div {
+      padding: 7px 8px;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.7);
+      color: #43515d;
+      font-size: 12px;
+      font-weight: 800;
+      animation: logPop 0.22s ease;
+    }
+
+    .answer-key {
+      padding: 11px;
+      border: 1px solid rgba(47, 109, 168, 0.22);
+      border-radius: var(--radius);
+      background: var(--blue-soft);
+      color: #24445f;
+      font-weight: 800;
+    }
+
+    .answer-key strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+      color: #183652;
+    }
+
+    .feedback {
+      display: grid;
+      gap: 10px;
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #f7fafb;
+    }
+
+    .feedback.good {
+      border-color: rgba(36, 122, 91, 0.24);
+      background: var(--green-soft);
+    }
+
+    .feedback.bad {
+      border-color: rgba(201, 74, 66, 0.24);
+      background: var(--red-soft);
+    }
+
+    .feedback strong {
+      font-size: 17px;
+    }
+
+    .feedback p {
+      margin: 0;
+      color: #43515d;
+    }
+
+    .review-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .review-item,
+    .coach-card {
+      padding: 11px;
+      border: 1px solid rgba(104, 118, 132, 0.18);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .review-item {
+      display: grid;
+      gap: 5px;
+    }
+
+    .review-item strong {
+      font-size: 14px;
+      color: #243746;
+    }
+
+    .review-meta {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .review-item.good {
+      border-color: rgba(36, 122, 91, 0.22);
+    }
+
+    .review-item.bad {
+      border-color: rgba(201, 74, 66, 0.22);
+    }
+
+    .coach-card {
+      border-left: 4px solid var(--blue);
+    }
+
+    .coach-card strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #243746;
+      font-size: 14px;
+    }
+
+    .rank-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .rank-chip {
+      min-height: 42px;
+      padding: 8px;
+      color: #34424e;
+      background: #f4f7f9;
+      border: 1px solid var(--line);
+    }
+
+    .rank-chip.active {
+      color: #ffffff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .memory-stage {
+      display: grid;
+      gap: 14px;
+      min-height: 300px;
+      align-content: center;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(135deg, #ffffff 0%, #f1f7f4 100%);
+      text-align: center;
+    }
+
+    .memory-progress {
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .memory-inputs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .memory-input {
+      display: grid;
+      gap: 7px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfcfd;
+      text-align: left;
+    }
+
+    .memory-input label {
+      color: #43515d;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .memory-input input {
+      min-height: 42px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      font-size: 18px;
+      font-weight: 900;
+      outline: none;
+    }
+
+    .memory-input input:focus {
+      border-color: rgba(47, 109, 168, 0.65);
+      box-shadow: 0 0 0 3px rgba(47, 109, 168, 0.12);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .summary-cell {
+      padding: 13px;
+      border-radius: var(--radius);
+      background: #f5f8fa;
+      border: 1px solid var(--line);
+    }
+
+    .summary-cell span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .summary-cell strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    /* V6: board-game table skin, inspired by mainstream Chinese card-game tables. */
+    body {
+      color: #f7efd2;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(255, 220, 126, 0.16), transparent 26%),
+        radial-gradient(circle at 14% 10%, rgba(202, 74, 66, 0.22), transparent 28%),
+        radial-gradient(circle at 88% 16%, rgba(47, 109, 168, 0.24), transparent 26%),
+        linear-gradient(135deg, #081712 0%, #123629 45%, #07100d 100%);
+    }
+
+    .topbar,
+    .metric,
+    .sidebar,
+    .workbench {
+      border-color: rgba(236, 200, 118, 0.28);
+      background: linear-gradient(145deg, rgba(18, 35, 30, 0.96), rgba(7, 17, 14, 0.94));
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.34);
+    }
+
+    .topbar {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .topbar::after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: -90px;
+      width: 320px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(236, 200, 118, 0.26), transparent 66%);
+      pointer-events: none;
+    }
+
+    .eyebrow,
+    .panel-title,
+    .metric span {
+      color: #edc876;
+    }
+
+    .subtitle,
+    .metric small,
+    .history-row span,
+    .mode-btn span,
+    .field label {
+      color: #b8c7bd;
+    }
+
+    .session-badge {
+      border-color: rgba(237, 200, 118, 0.35);
+      background: linear-gradient(145deg, rgba(237, 200, 118, 0.24), rgba(36, 122, 91, 0.28));
+      color: #ffe6a4;
+    }
+
+    .session-badge span {
+      color: #d7c693;
+    }
+
+    .mode-btn,
+    .goal,
+    .history-row,
+    select,
+    input[type="number"] {
+      color: #f7efd2;
+      border-color: rgba(236, 200, 118, 0.2);
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .mode-btn.active,
+    .primary-action {
+      color: #1b1608;
+      background: linear-gradient(180deg, #ffe29a, #d9a33a);
+      border-color: rgba(255, 231, 163, 0.7);
+    }
+
+    .mode-btn .pill,
+    .counter-chip,
+    .tag {
+      color: #2b210a;
+      background: #edc876;
+      border-color: rgba(255, 231, 163, 0.4);
+    }
+
+    .work-head {
+      border-bottom-color: rgba(236, 200, 118, 0.22);
+      background: linear-gradient(90deg, rgba(27, 64, 49, 0.82), rgba(10, 24, 20, 0.78));
+    }
+
+    .work-head p,
+    .prompt-line,
+    .scenario-panel p,
+    .guide-copy p,
+    .rule-tile p,
+    .review-meta {
+      color: #bdcbbf;
+    }
+
+    .question {
+      background:
+        radial-gradient(ellipse at center, rgba(32, 112, 80, 0.4), rgba(7, 22, 17, 0.18) 62%, transparent 72%);
+    }
+
+    .hand-panel,
+    .scenario-panel,
+    .rule-tile,
+    .memory-input,
+    .review-item,
+    .coach-card,
+    .play-card {
+      border-color: rgba(236, 200, 118, 0.2);
+      background: rgba(8, 20, 17, 0.72);
+      color: #f7efd2;
+    }
+
+    .table-map {
+      border-color: rgba(237, 200, 118, 0.32);
+      background:
+        radial-gradient(ellipse at 50% 45%, rgba(49, 138, 91, 0.92), rgba(17, 68, 48, 0.9) 54%, rgba(7, 24, 18, 0.96) 100%);
+      box-shadow: inset 0 0 0 10px rgba(237, 200, 118, 0.08), inset 0 0 60px rgba(0, 0, 0, 0.32);
+    }
+
+    .seat {
+      border-color: rgba(237, 200, 118, 0.24);
+      background: rgba(5, 18, 14, 0.78);
+      color: #f7efd2;
+    }
+
+    .seat strong,
+    .scenario-panel h3,
+    .hand-panel h3,
+    .rule-tile strong,
+    .review-item strong,
+    .coach-card strong,
+    .play-card strong {
+      color: #ffe6a4;
+    }
+
+    .seat.me {
+      border-color: rgba(255, 226, 154, 0.75);
+      background: linear-gradient(145deg, rgba(237, 200, 118, 0.24), rgba(36, 122, 91, 0.38));
+    }
+
+    .choice-btn,
+    .battle-switch button,
+    .answer-btn.secondary,
+    .ghost-action {
+      color: #f7efd2;
+      border-color: rgba(236, 200, 118, 0.22);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .answer-btn,
+    .battle-switch button.active,
+    .answer-btn.gold {
+      color: #211704;
+      background: linear-gradient(180deg, #ffe29a, #d39a2c);
+      border-color: rgba(255, 231, 163, 0.7);
+    }
+
+    .feedback,
+    .empty-box,
+    .result-box,
+    .guide-band,
+    .guide-steps,
+    .memory-stage,
+    .answer-key {
+      border-color: rgba(236, 200, 118, 0.24);
+      background: rgba(8, 20, 17, 0.88);
+      color: #f7efd2;
+    }
+
+    .feedback.good {
+      border-color: rgba(94, 215, 154, 0.36);
+      background: rgba(17, 66, 47, 0.88);
+    }
+
+    .feedback.bad {
+      border-color: rgba(201, 74, 66, 0.44);
+      background: rgba(62, 23, 21, 0.9);
+    }
+
+    .answer-key {
+      border-color: rgba(47, 109, 168, 0.44);
+      background: rgba(17, 48, 74, 0.74);
+    }
+
+    .card {
+      background:
+        linear-gradient(145deg, #fffef7 0%, #f8f2df 72%, #e6d7ae 100%);
+      border-color: #e2d3ac;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24);
+    }
+
+    .match-hand {
+      min-height: 132px;
+      align-items: end;
+      padding-top: 18px;
+    }
+
+    .card.selectable {
+      border: 1px solid #e2d3ac;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+
+    .card.selectable:hover {
+      transform: translateY(-8px);
+    }
+
+    .card.selected {
+      transform: translateY(-22px);
+      border-color: #ffe29a;
+      box-shadow: 0 0 0 3px rgba(255, 226, 154, 0.36), 0 18px 28px rgba(0, 0, 0, 0.35);
+    }
+
+    .match-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .played-card {
+      animation: dealPop 0.24s ease both;
+    }
+
+    .table-play-zone {
+      min-height: 112px;
+      display: grid;
+      gap: 8px;
+      align-content: center;
+      padding: 12px;
+      border: 1px dashed rgba(255, 226, 154, 0.35);
+      border-radius: var(--radius);
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    @keyframes dealPop {
+      from {
+        transform: translateY(18px) scale(0.96);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes logPop {
+      from {
+        transform: translateX(8px);
+        opacity: 0.4;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    details {
+      color: #d5decf;
+      font-weight: 800;
+    }
+
+    summary {
+      cursor: pointer;
+      color: #ffe6a4;
+    }
+
+    @media (max-width: 1050px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+
+      .mode-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow-x: hidden;
+      }
+
+      .page {
+        width: min(100% - 12px, 520px);
+        padding: 8px 0 18px;
+      }
+
+      .topbar,
+      .work-head,
+      .compare-grid,
+      .guide-band,
+      .battle-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        gap: 10px;
+        padding: 13px;
+        margin-bottom: 8px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      .subtitle {
+        font-size: 13px;
+      }
+
+      .session-badge {
+        text-align: left;
+        min-width: 0;
+        padding: 10px 12px;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .metric {
+        min-height: 76px;
+        padding: 10px;
+      }
+
+      .metric strong {
+        font-size: 24px;
+      }
+
+      .layout {
+        gap: 8px;
+      }
+
+      .sidebar {
+        gap: 10px;
+        padding: 10px;
+      }
+
+      .mode-grid {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scroll-snap-type: x mandatory;
+      }
+
+      .mode-btn {
+        min-width: 168px;
+        min-height: 50px;
+        scroll-snap-align: start;
+      }
+
+      .settings,
+      .memory-inputs,
+      .rule-grid,
+      .review-grid,
+      .battle-switch,
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .work-head {
+        padding: 12px;
+        gap: 8px;
+      }
+
+      .work-head h2 {
+        font-size: 22px;
+      }
+
+      .question {
+        padding: 10px;
+      }
+
+      .guide-band,
+      .table-map,
+      .scenario-panel,
+      .hand-panel {
+        padding: 11px;
+      }
+
+      .round-counter {
+        justify-content: flex-start;
+      }
+
+      .rank-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .card {
+        width: 43px;
+        min-width: 43px;
+        border-radius: 6px;
+      }
+
+      .card b {
+        font-size: 16px;
+      }
+
+      .hand {
+        gap: 6px;
+      }
+
+      .match-hand {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        min-height: 122px;
+        padding: 24px 4px 8px;
+        scroll-snap-type: x proximity;
+      }
+
+      .match-hand .card {
+        scroll-snap-align: center;
+      }
+
+      .card.selected {
+        transform: translateY(-18px);
+      }
+
+      .seat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .seat {
+        min-height: 62px;
+        padding: 8px;
+      }
+
+      .table-play-zone {
+        min-height: 96px;
+      }
+
+      .match-actions {
+        position: sticky;
+        bottom: 8px;
+        z-index: 4;
+        padding: 8px;
+        border: 1px solid rgba(255, 226, 154, 0.28);
+        border-radius: var(--radius);
+        background: rgba(8, 20, 17, 0.92);
+        backdrop-filter: blur(8px);
+      }
+
+      .match-actions button,
+      .answer-row button {
+        flex: 1 1 136px;
+        min-height: 46px;
+      }
+
+      .history {
+        max-height: 150px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Guandan Trainer · Offline MVP</p>
+        <h1>掼蛋单人练习器</h1>
+        <p class="subtitle">入门先练规则和记牌，进阶进入四人轮转，用慢练和实战两条线把牌感养起来。</p>
+      </div>
+      <div class="session-badge">
+        <strong id="sessionAccuracy">0%</strong>
+        <span>本轮正确率</span>
+      </div>
+    </header>
+
+    <section class="metrics" aria-label="训练指标">
+      <div class="metric">
+        <span>当前模块</span>
+        <strong id="metricMode">牌型识别</strong>
+        <small id="metricTarget">10 秒内理牌</small>
+      </div>
+      <div class="metric">
+        <span>本轮进度</span>
+        <strong id="metricProgress">0/5</strong>
+        <small id="metricLevel">级牌 5</small>
+      </div>
+      <div class="metric">
+        <span>平均用时</span>
+        <strong id="metricTime">0.0s</strong>
+        <small>按已作答题目计算</small>
+      </div>
+      <div class="metric">
+        <span>累计分数</span>
+        <strong id="metricScore">0</strong>
+        <small>每题最高 100</small>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="sidebar">
+        <section>
+          <p class="panel-title">训练模块</p>
+          <div class="mode-grid" id="modeGrid"></div>
+        </section>
+
+        <section>
+          <p class="panel-title">本轮设置</p>
+          <div class="settings">
+            <div class="field">
+              <label for="levelSelect">级牌</label>
+              <select id="levelSelect"></select>
+            </div>
+            <div class="field">
+              <label for="totalInput">题量</label>
+              <input id="totalInput" type="number" min="1" max="20" value="5">
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <p class="panel-title">模拟设置</p>
+          <div class="settings">
+            <div class="field">
+              <label for="battleModeSelect">对战类型</label>
+              <select id="battleModeSelect">
+                <option value="decision">思维慢练</option>
+                <option value="match">实战轮转</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="difficultySelect">对手难度</label>
+              <select id="difficultySelect">
+                <option value="easy">简单</option>
+                <option value="normal">中等</option>
+                <option value="hard">困难</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <button class="primary-action" id="startBtn">开始训练</button>
+
+        <section>
+          <p class="panel-title">入门达标线</p>
+          <div class="goals">
+            <div class="goal">
+              <div class="goal-head"><span>牌型识别</span><span id="goalIdentifyText">0%</span></div>
+              <div class="bar"><i id="goalIdentifyBar" style="--value: 0%"></i></div>
+            </div>
+            <div class="goal">
+              <div class="goal-head"><span>同牌型判断</span><span id="goalCompareText">0%</span></div>
+              <div class="bar"><i id="goalCompareBar" style="--value: 0%"></i></div>
+            </div>
+            <div class="goal">
+              <div class="goal-head"><span>核心大牌记忆</span><span id="goalMemoryText">0%</span></div>
+              <div class="bar"><i id="goalMemoryBar" style="--value: 0%"></i></div>
+            </div>
+            <div class="goal">
+              <div class="goal-head"><span>断张识别</span><span id="goalVoidText">0%</span></div>
+              <div class="bar"><i id="goalVoidBar" style="--value: 0%"></i></div>
+            </div>
+            <div class="goal">
+              <div class="goal-head"><span>模拟决策</span><span id="goalBattleText">0%</span></div>
+              <div class="bar"><i id="goalBattleBar" style="--value: 0%"></i></div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <p class="panel-title">最近训练</p>
+          <div class="history" id="historyList"></div>
+        </section>
+      </aside>
+
+      <main class="workbench">
+        <div class="work-head">
+          <div>
+            <h2 id="workTitle">牌型识别</h2>
+            <p id="workSubtitle">随机 27 张手牌，快速统计成型牌。</p>
+          </div>
+          <div class="round-counter">
+            <span class="counter-chip" id="roundChip">第 0 题</span>
+            <span class="counter-chip" id="timerChip">0.0s</span>
+          </div>
+        </div>
+        <div class="question" id="questionArea"></div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const RANKS = ["3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2"];
+    const STRAIGHT_RANKS = ["3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+    const SUITS = [
+      { id: "S", symbol: "♠", color: "black" },
+      { id: "H", symbol: "♥", color: "red" },
+      { id: "C", symbol: "♣", color: "black" },
+      { id: "D", symbol: "♦", color: "red" }
+    ];
+    const SUIT_MAP = Object.fromEntries(SUITS.map((suit) => [suit.id, suit]));
+    const STORAGE_KEY = "guandan-trainer-mvp-history-v1";
+    const IDENTIFY_FIELDS = [
+      { key: "bombs", label: "炸弹", unit: "组" },
+      { key: "straightFlushes", label: "同花顺", unit: "组" },
+      { key: "straights", label: "顺子", unit: "组" },
+      { key: "triples", label: "夯", unit: "组" },
+      { key: "pairs", label: "对子", unit: "组" },
+      { key: "singles", label: "单张", unit: "张" }
+    ];
+    const GUIDE_CONTENT = {
+      identify: {
+        title: "先学会把 27 张牌看清楚",
+        intro: "这一关练的是拿到手牌后的第一反应：先不要急着出牌，先知道自己有几套成型牌、几张废牌、哪里有炸弹风险。",
+        steps: ["看完整手牌", "按牌型数量填空", "提交后对照标准答案复盘"],
+        rules: [
+          ["炸弹", "四张及以上同点数算一组炸弹；首版先按自然牌统计。", ["9S", "9H", "9C", "9D"]],
+          ["同花顺", "同花色 5 张连续牌算一组；2 和王不计入顺子。", ["7S", "8S", "9S", "10S", "JS"]],
+          ["顺子", "任意花色 5 张连续牌算一组；多个连续窗口分别统计。", ["5S", "6H", "7C", "8D", "9S"]],
+          ["夯", "三张同点数算一组，带不带对子不影响三张本体。", ["QS", "QH", "QC"]],
+          ["对子", "两张同点数算一组；三张、四张也说明它至少有对子结构。", ["AS", "AH"]],
+          ["单张", "没有形成对子结构的自然单张；王按单张统计。", ["4S", "BJ"]]
+        ],
+        tip: "新手先追求统计准确，再追求 10 秒内完成。"
+      },
+      compare: {
+        title: "再练同牌型大小反应",
+        intro: "这一关练的是规则反射：同牌型只比关键张，不被带牌干扰。",
+        steps: ["看左手和右手", "判断哪边更大", "看解释确认关键张"],
+        rules: [
+          ["对子", "对子只比对子点数。", ["KS", "KH"]],
+          ["夯", "夯只比三张点数，带的对子不影响大小。", ["JS", "JH", "JC", "5S", "5H"]],
+          ["顺子", "顺子只比最大张。", ["8S", "9H", "10C", "JD", "QS"]],
+          ["四头火", "同头数炸弹比点数，更多头数优先级更高。", ["7S", "7H", "7C", "7D"]],
+          ["级牌", "当前级牌在普通点数中优先级更高。", ["LEVELS", "LEVELH"]],
+          ["王", "大小王只在对应题型中参与比较。", ["SJ", "BJ"]]
+        ],
+        tip: "目标是 3 秒内判断，不要脑内复盘太久。"
+      },
+      memory: {
+        title: "核心大牌先记少而准",
+        intro: "这一关练记牌基本功：先记大小王、2、级牌、A、K，不急着全牌死记硬背。",
+        steps: ["开始翻牌", "只盯核心大牌", "翻完填写剩余张数"],
+        rules: [
+          ["大王", "两副牌共有 2 张。", ["BJ", "BJ"]],
+          ["小王", "两副牌共有 2 张。", ["SJ", "SJ"]],
+          ["2", "两副牌共有 8 张。", ["2S", "2H", "2C", "2D"]],
+          ["级牌", "当前级牌共有 8 张，首版不模拟逢人配万能变化。", ["LEVELS", "LEVELH", "LEVELC", "LEVELD"]],
+          ["A", "两副牌共有 8 张。", ["AS", "AH", "AC", "AD"]],
+          ["K", "两副牌共有 8 张。", ["KS", "KH", "KC", "KD"]]
+        ],
+        tip: "入门阶段正确率比速度更重要，先做到 100%。"
+      },
+      voids: {
+        title: "断张是判断炸弹风险的起点",
+        intro: "这一关练的是拿到 27 张牌后，快速找出手里完全没有的点数。",
+        steps: ["看 27 张手牌", "点选所有断张", "提交后看漏选和多选"],
+        rules: [
+          ["断张", "某个点数在你手里一张都没有，就算你的断张。", ["3S", "4H", "5C"]],
+          ["风险", "你断掉的点数更可能集中在其他人手里。", ["10S", "10H", "10C", "10D"]],
+          ["大牌断张", "10 以上断张尤其要留意炸弹风险。", ["10S", "JH", "QC", "KD", "AS"]],
+          ["小牌断张", "小点数断张也会影响顺子和钢板判断。", ["3S", "4H", "5C", "6D"]],
+          ["王", "王不参与断张点数统计。", ["SJ", "BJ"]],
+          ["级牌", "级牌仍按点数看有没有出现在你手里。", ["LEVELS", "LEVELH"]]
+        ],
+        tip: "先抓大牌断张，再逐步扩展到全点数。"
+      },
+      battle: {
+        title: "模拟对战分两种练法",
+        intro: "刚入门先做思维慢练，理解接不接、炸不炸；有基础后进入实战轮转，从四人开局开始练出牌节奏。",
+        steps: ["读懂桌面局势", "看自己的手牌", "选择最合理动作"],
+        rules: [
+          ["队友优先", "队友出牌时，能不接就不接，除非要救牌权。", ["6S"]],
+          ["关键轮", "对手即将冲刺、队友明显要不起时才考虑强控。", ["9S", "9H"]],
+          ["炸弹", "不炸小牌，留给冲刺、防守、救队友。", ["KS", "KH", "KC", "KD"]],
+          ["牌权", "拿到牌权后要顺着自己的短板和队友牌路走。", ["AS", "2H", "BJ"]],
+          ["冲刺", "没有兜底牌时，不提前出完所有大牌。", ["10S", "JH", "QC", "KD", "AS"]],
+          ["复盘", "每次选择后看一句原则解释。", ["SJ", "BJ"]]
+        ],
+        tip: "实战轮转是后续完整单机对局的雏形，当前先练基础出牌和接牌节奏。"
+      }
+    };
+    const BATTLE_SCENARIOS = [
+      {
+        title: "队友小单开路",
+        situation: "你的队友刚出单张 6，右手对手还有 3 张牌，左手对手暂时要不起。",
+        hand: [
+          { rank: "A", suit: "S", color: "black", joker: false },
+          { rank: "2", suit: "H", color: "red", joker: false },
+          { rank: "BJ", label: "大王", color: "red", joker: true, kind: "big" },
+          ...cardsOfRank("9", 4),
+          ...cardsOfRank("4", 2)
+        ],
+        seats: ["左手对手：8 张", "队友：12 张", "右手对手：3 张"],
+        choices: [
+          ["pass", "不接，让队友继续过小牌"],
+          ["king", "用大王抢牌权"],
+          ["bomb", "直接炸掉这轮"]
+        ],
+        answer: "pass",
+        explanation: "队友主动出小单，通常是在过废牌。你有大王和炸弹兜底，不必抢队友牌权。"
+      },
+      {
+        title: "对手冲刺警报",
+        situation: "右手对手剩 2 张，刚用 A 收了牌权并出对子 7。队友明确要不起。",
+        hand: [
+          ...cardsOfRank("9", 2),
+          ...cardsOfRank("Q", 2),
+          ...cardsOfRank("5", 4),
+          { rank: "2", suit: "C", color: "black", joker: false }
+        ],
+        seats: ["左手对手：9 张", "队友：6 张", "右手对手：2 张"],
+        choices: [
+          ["pair", "用对子 9 接住"],
+          ["bomb", "用四个 5 炸掉"],
+          ["pass", "不接，观察下一轮"]
+        ],
+        answer: "pair",
+        explanation: "同牌型能接就先用同牌型接，保留炸弹处理更关键的冲刺轮。"
+      },
+      {
+        title: "炸弹使用边界",
+        situation: "左手对手出顺子 7-8-9-10-J，手里还剩 9 张。队友还有 2 张，看起来可能要冲刺。",
+        hand: [
+          ...suitedSequence(["8", "9", "10", "J", "Q"]),
+          ...cardsOfRank("K", 4),
+          { rank: "A", suit: "D", color: "red", joker: false }
+        ],
+        seats: ["左手对手：9 张", "队友：2 张", "右手对手：11 张"],
+        choices: [
+          ["straight", "用 8-9-10-J-Q 顺子接住"],
+          ["bomb", "用四个 K 炸掉"],
+          ["pass", "不接，等队友自己处理"]
+        ],
+        answer: "straight",
+        explanation: "能用同牌型自然接牌，就不要先动炸弹；接住后优先给队友递可走的牌型。"
+      }
+    ];
+    const MODE_CONFIG = {
+      identify: {
+        label: "牌型识别",
+        target: "10 秒内理牌",
+        subtitle: "随机 27 张手牌，快速统计炸弹、同花顺、顺子、夯、对子、单张。",
+        defaultTotal: 5
+      },
+      compare: {
+        label: "牌型比较",
+        target: "3 秒内反应",
+        subtitle: "同牌型只比核心张，带牌不影响大小。",
+        defaultTotal: 8
+      },
+      memory: {
+        label: "核心大牌",
+        target: "剩余张数",
+        subtitle: "先记大小王、2、级牌、A、K，再扩展到全点数。",
+        defaultTotal: 3
+      },
+      voids: {
+        label: "断张识别",
+        target: "27 张手牌",
+        subtitle: "快速找出手里一张都没有的点数，优先标记炸弹风险。",
+        defaultTotal: 5
+      },
+      battle: {
+        label: "模拟对战",
+        target: "单机决策",
+        subtitle: "把常见关键轮抽成选择题，先练接牌、控牌、炸弹和队友配合。",
+        defaultTotal: 5
+      }
+    };
+
+    const state = {
+      mode: "identify",
+      levelRank: "5",
+      total: 5,
+      index: 0,
+      active: false,
+      finished: false,
+      question: null,
+      questionStartedAt: 0,
+      timerId: null,
+      memoryTimerId: null,
+      battleMode: "decision",
+      difficulty: "normal",
+      selectedMatchCards: new Set(),
+      selectedRanks: new Set(),
+      answers: [],
+      lastFeedback: null,
+      history: loadHistory()
+    };
+
+    const el = {
+      modeGrid: document.getElementById("modeGrid"),
+      levelSelect: document.getElementById("levelSelect"),
+      totalInput: document.getElementById("totalInput"),
+      battleModeSelect: document.getElementById("battleModeSelect"),
+      difficultySelect: document.getElementById("difficultySelect"),
+      startBtn: document.getElementById("startBtn"),
+      questionArea: document.getElementById("questionArea"),
+      workTitle: document.getElementById("workTitle"),
+      workSubtitle: document.getElementById("workSubtitle"),
+      roundChip: document.getElementById("roundChip"),
+      timerChip: document.getElementById("timerChip"),
+      metricMode: document.getElementById("metricMode"),
+      metricTarget: document.getElementById("metricTarget"),
+      metricProgress: document.getElementById("metricProgress"),
+      metricLevel: document.getElementById("metricLevel"),
+      metricTime: document.getElementById("metricTime"),
+      metricScore: document.getElementById("metricScore"),
+      sessionAccuracy: document.getElementById("sessionAccuracy"),
+      historyList: document.getElementById("historyList"),
+      goalIdentifyText: document.getElementById("goalIdentifyText"),
+      goalIdentifyBar: document.getElementById("goalIdentifyBar"),
+      goalCompareText: document.getElementById("goalCompareText"),
+      goalCompareBar: document.getElementById("goalCompareBar"),
+      goalMemoryText: document.getElementById("goalMemoryText"),
+      goalMemoryBar: document.getElementById("goalMemoryBar"),
+      goalVoidText: document.getElementById("goalVoidText"),
+      goalVoidBar: document.getElementById("goalVoidBar"),
+      goalBattleText: document.getElementById("goalBattleText"),
+      goalBattleBar: document.getElementById("goalBattleBar")
+    };
+
+    function init() {
+      el.levelSelect.innerHTML = RANKS.map((rank) => `<option value="${rank}">${rank}</option>`).join("");
+      el.levelSelect.value = state.levelRank;
+      el.totalInput.value = String(state.total);
+      el.battleModeSelect.value = state.battleMode;
+      el.difficultySelect.value = state.difficulty;
+      renderModeGrid();
+      render();
+      bindEvents();
+    }
+
+    function bindEvents() {
+      el.levelSelect.addEventListener("change", () => {
+        state.levelRank = el.levelSelect.value;
+        if (state.active) startSession();
+        render();
+      });
+
+      el.totalInput.addEventListener("change", () => {
+        const next = Math.max(1, Math.min(20, Number(el.totalInput.value) || MODE_CONFIG[state.mode].defaultTotal));
+        state.total = next;
+        el.totalInput.value = String(next);
+        if (state.active) startSession();
+        render();
+      });
+
+      el.battleModeSelect.addEventListener("change", () => {
+        state.battleMode = el.battleModeSelect.value;
+        if (state.mode === "battle") {
+          state.total = state.battleMode === "match" ? 8 : MODE_CONFIG.battle.defaultTotal;
+          el.totalInput.value = String(state.total);
+          if (state.active) startSession();
+        }
+        render();
+      });
+
+      el.difficultySelect.addEventListener("change", () => {
+        state.difficulty = el.difficultySelect.value;
+        if (state.mode === "battle" && state.active) startSession();
+        render();
+      });
+
+      el.startBtn.addEventListener("click", startSession);
+
+      document.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const action = button.dataset.action;
+        if (action === "set-mode") setMode(button.dataset.mode);
+        if (action === "set-battle-mode") {
+          state.battleMode = button.dataset.battleMode;
+          el.battleModeSelect.value = state.battleMode;
+          if (state.mode === "battle") {
+            state.total = state.battleMode === "match" ? 8 : MODE_CONFIG.battle.defaultTotal;
+            el.totalInput.value = String(state.total);
+            startSession();
+          }
+        }
+        if (action === "submit-identify") submitIdentify();
+        if (action === "answer-compare") submitCompare(button.dataset.answer);
+        if (action === "next-question") nextQuestion();
+        if (action === "toggle-rank") toggleRank(button.dataset.rank);
+        if (action === "submit-voids") submitVoids();
+        if (action === "start-memory") startMemoryReveal();
+        if (action === "skip-memory") showMemoryInputs();
+        if (action === "submit-memory") submitMemory();
+        if (action === "answer-battle") submitBattle(button.dataset.answer);
+        if (action === "select-match-card") toggleMatchCard(Number(button.dataset.cardIndex));
+        if (action === "play-selected") submitSelectedMatchCards();
+        if (action === "clear-selected") {
+          state.selectedMatchCards = new Set();
+          render();
+        }
+        if (action === "match-action") submitMatchAction(button.dataset.matchAction);
+        if (action === "continue-match") continueMatch();
+        if (action === "go-battle") {
+          setMode("battle");
+          startSession();
+        }
+        if (action === "restart") startSession();
+        if (action === "clear-history") clearHistory();
+      });
+    }
+
+    function renderModeGrid() {
+      el.modeGrid.innerHTML = Object.entries(MODE_CONFIG).map(([id, config]) => `
+        <button class="mode-btn ${id === state.mode ? "active" : ""}" data-action="set-mode" data-mode="${id}">
+          <span><strong>${config.label}</strong><br><span>${config.target}</span></span>
+          <span class="pill">${modePill(id)}</span>
+        </button>
+      `).join("");
+    }
+
+    function modePill(id) {
+      if (id === "identify") return "理牌";
+      if (id === "compare") return "3s";
+      if (id === "memory") return "记牌";
+      if (id === "voids") return "断张";
+      return "对战";
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      state.total = mode === "battle" && state.battleMode === "match" ? 8 : MODE_CONFIG[mode].defaultTotal;
+      el.totalInput.value = String(state.total);
+      clearTimers();
+      state.active = false;
+      state.finished = false;
+      state.index = 0;
+      state.question = null;
+      state.answers = [];
+      state.selectedMatchCards = new Set();
+      state.lastFeedback = null;
+      renderModeGrid();
+      render();
+    }
+
+    function difficultyLabel(value) {
+      if (value === "easy") return "简单";
+      if (value === "hard") return "困难";
+      return "中等";
+    }
+
+    function startSession() {
+      clearTimers();
+      state.total = Math.max(1, Math.min(20, Number(el.totalInput.value) || MODE_CONFIG[state.mode].defaultTotal));
+      state.active = true;
+      state.finished = false;
+      state.index = 0;
+      state.answers = [];
+      state.selectedMatchCards = new Set();
+      state.lastFeedback = null;
+      nextQuestion();
+    }
+
+    function nextQuestion() {
+      clearTimers();
+      if (state.index >= state.total) {
+        finishSession();
+        return;
+      }
+      state.index += 1;
+      state.selectedRanks = new Set();
+      state.selectedMatchCards = new Set();
+      state.lastFeedback = null;
+      state.question = generateQuestion();
+      state.questionStartedAt = performance.now();
+      startQuestionTimer();
+      render();
+    }
+
+    function finishSession() {
+      clearTimers();
+      state.active = false;
+      state.finished = true;
+      state.question = null;
+      const summary = summarizeAnswers(state.answers);
+      state.history.unshift({
+        mode: state.mode,
+        levelRank: state.levelRank,
+        total: state.total,
+        accuracy: summary.accuracy,
+        avgScore: summary.avgScore,
+        avgMs: summary.avgMs,
+        date: new Date().toISOString()
+      });
+      state.history = state.history.slice(0, 12);
+      saveHistory();
+      render();
+    }
+
+    function generateQuestion() {
+      if (state.mode === "identify") return generateIdentifyQuestion();
+      if (state.mode === "compare") return generateCompareQuestion();
+      if (state.mode === "memory") return generateMemoryQuestion();
+      if (state.mode === "battle") return generateBattleQuestion();
+      return generateVoidQuestion();
+    }
+
+    function buildDeck() {
+      const deck = [];
+      for (let copy = 0; copy < 2; copy += 1) {
+        for (const suit of SUITS) {
+          for (const rank of RANKS) {
+            deck.push({ rank, suit: suit.id, color: suit.color, copy, joker: false });
+          }
+        }
+        deck.push({ rank: "SJ", label: "小王", color: "black", copy, joker: true, kind: "small" });
+        deck.push({ rank: "BJ", label: "大王", color: "red", copy, joker: true, kind: "big" });
+      }
+      return deck;
+    }
+
+    function shuffle(items) {
+      const copy = [...items];
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function rankStrength(rank) {
+      if (rank === "BJ") return 200;
+      if (rank === "SJ") return 190;
+      if (rank === state.levelRank) return 180;
+      if (rank === "2") return 170;
+      return RANKS.indexOf(rank);
+    }
+
+    function straightStrength(cards) {
+      return Math.max(...cards.map((card) => STRAIGHT_RANKS.indexOf(card.rank)));
+    }
+
+    function generateCompareQuestion() {
+      const generators = [
+        makePairCompare,
+        makeTriplePairCompare,
+        makeStraightCompare,
+        makeBombCompare
+      ];
+      return generators[Math.floor(Math.random() * generators.length)]();
+    }
+
+    function generateIdentifyQuestion() {
+      const hand = sortCards(shuffle(buildDeck()).slice(0, 27));
+      return {
+        type: "identify",
+        hand,
+        expected: analyzeHand(hand)
+      };
+    }
+
+    function analyzeHand(hand) {
+      const counts = Object.fromEntries(RANKS.map((rank) => [rank, 0]));
+      const suitCounts = Object.fromEntries(SUITS.map((suit) => [
+        suit.id,
+        Object.fromEntries(STRAIGHT_RANKS.map((rank) => [rank, 0]))
+      ]));
+      let singles = 0;
+
+      for (const card of hand) {
+        if (card.joker) {
+          singles += 1;
+          continue;
+        }
+        counts[card.rank] += 1;
+        if (STRAIGHT_RANKS.includes(card.rank)) suitCounts[card.suit][card.rank] += 1;
+      }
+
+      const bombs = RANKS.filter((rank) => counts[rank] >= 4).length;
+      const triples = RANKS.filter((rank) => counts[rank] >= 3).length;
+      const pairs = RANKS.filter((rank) => counts[rank] >= 2).length;
+      singles += RANKS.filter((rank) => counts[rank] === 1).length;
+      const straights = countStraightWindows(counts);
+      const straightFlushes = SUITS.reduce((sum, suit) => sum + countStraightWindows(suitCounts[suit.id]), 0);
+
+      return { bombs, straightFlushes, straights, triples, pairs, singles };
+    }
+
+    function countStraightWindows(counts) {
+      let total = 0;
+      for (let start = 0; start <= STRAIGHT_RANKS.length - 5; start += 1) {
+        const window = STRAIGHT_RANKS.slice(start, start + 5);
+        if (window.every((rank) => (counts[rank] || 0) > 0)) total += 1;
+      }
+      return total;
+    }
+
+    function availableCompareRanks() {
+      return RANKS.filter((rank) => rank !== state.levelRank);
+    }
+
+    function pickTwoRanks() {
+      const ranks = shuffle(availableCompareRanks());
+      return [ranks[0], ranks[1]];
+    }
+
+    function makePairCompare() {
+      const [leftRank, rightRank] = pickTwoRanks();
+      const left = cardsOfRank(leftRank, 2);
+      const right = cardsOfRank(rightRank, 2);
+      return compareItem("对子", "对子只比对子点数。", left, right, rankStrength(leftRank), rankStrength(rightRank));
+    }
+
+    function makeTriplePairCompare() {
+      const [leftRank, rightRank] = pickTwoRanks();
+      const kickers = shuffle(availableCompareRanks().filter((rank) => rank !== leftRank && rank !== rightRank));
+      const left = [...cardsOfRank(leftRank, 3), ...cardsOfRank(kickers[0], 2)];
+      const right = [...cardsOfRank(rightRank, 3), ...cardsOfRank(kickers[1], 2)];
+      return compareItem("夯", "夯只比三张点数，带的对子不影响大小。", left, right, rankStrength(leftRank), rankStrength(rightRank));
+    }
+
+    function makeStraightCompare() {
+      const starts = shuffle([0, 1, 2, 3, 4, 5, 6, 7]);
+      const leftSeq = STRAIGHT_RANKS.slice(starts[0], starts[0] + 5);
+      const rightSeq = STRAIGHT_RANKS.slice(starts[1], starts[1] + 5);
+      const left = suitedSequence(leftSeq);
+      const right = suitedSequence(rightSeq);
+      return compareItem("顺子", "顺子只比最大张，2 和王不进顺子。", left, right, straightStrength(left), straightStrength(right));
+    }
+
+    function makeBombCompare() {
+      const [leftRank, rightRank] = pickTwoRanks();
+      const left = cardsOfRank(leftRank, 4);
+      const right = cardsOfRank(rightRank, 4);
+      return compareItem("四头火", "同头数炸弹比点数；更高头数炸弹优先级更高。", left, right, rankStrength(leftRank), rankStrength(rightRank));
+    }
+
+    function compareItem(type, rule, left, right, leftScore, rightScore) {
+      return {
+        type: "compare",
+        title: type,
+        rule,
+        left,
+        right,
+        answer: leftScore > rightScore ? "left" : "right",
+        explanation: leftScore > rightScore ? "左手更大。" : "右手更大。"
+      };
+    }
+
+    function cardsOfRank(rank, count) {
+      const cards = [];
+      for (let i = 0; i < count; i += 1) {
+        const suit = SUITS[i % SUITS.length];
+        cards.push({ rank, suit: suit.id, color: suit.color, copy: Math.floor(i / 4), joker: false });
+      }
+      return cards;
+    }
+
+    function suitedSequence(ranks) {
+      const suit = SUITS[Math.floor(Math.random() * SUITS.length)];
+      return ranks.map((rank, index) => ({
+        rank,
+        suit: suit.id,
+        color: suit.color,
+        copy: index > 3 ? 1 : 0,
+        joker: false
+      }));
+    }
+
+    function generateVoidQuestion() {
+      const hand = sortCards(shuffle(buildDeck()).slice(0, 27));
+      const counts = Object.fromEntries(RANKS.map((rank) => [rank, 0]));
+      hand.forEach((card) => {
+        if (!card.joker) counts[card.rank] += 1;
+      });
+      const expected = RANKS.filter((rank) => counts[rank] === 0);
+      return { type: "voids", hand, counts, expected };
+    }
+
+    function generateMemoryQuestion() {
+      const deck = buildDeck();
+      const revealed = shuffle(deck).slice(0, 20);
+      const focus = [
+        { key: "BJ", label: "大王", match: (card) => card.rank === "BJ", total: 2 },
+        { key: "SJ", label: "小王", match: (card) => card.rank === "SJ", total: 2 },
+        { key: "rank:2", label: "2", match: (card) => !card.joker && card.rank === "2", total: 8 },
+        { key: "level", label: `级牌 ${state.levelRank}`, match: (card) => !card.joker && card.rank === state.levelRank, total: 8 },
+        { key: "rank:A", label: "A", match: (card) => !card.joker && card.rank === "A", total: 8 },
+        { key: "rank:K", label: "K", match: (card) => !card.joker && card.rank === "K", total: 8 }
+      ].filter((item, index, list) => {
+        if (item.key.startsWith("rank:") && item.key.split(":")[1] === state.levelRank) return false;
+        return list.findIndex((candidate) => candidate.label === item.label) === index;
+      });
+
+      const expected = {};
+      for (const item of focus) {
+        expected[item.key] = item.total - revealed.filter(item.match).length;
+      }
+
+      return {
+        type: "memory",
+        revealed,
+        focus,
+        expected,
+        phase: "ready",
+        cursor: -1
+      };
+    }
+
+    function generateBattleQuestion() {
+      if (state.battleMode === "match") {
+        return {
+          type: "battle-match",
+          match: createMatch()
+        };
+      }
+      const scenario = BATTLE_SCENARIOS[Math.floor(Math.random() * BATTLE_SCENARIOS.length)];
+      return {
+        type: "battle",
+        ...scenario,
+        hand: sortCards(scenario.hand)
+      };
+    }
+
+    function createMatch() {
+      const deck = shuffle(buildDeck());
+      const seats = [
+        { id: "me", name: "我", team: "A", hand: sortCards(deck.slice(0, 27)) },
+        { id: "left", name: "左手", team: "B", hand: sortCards(deck.slice(27, 54)) },
+        { id: "partner", name: "队友", team: "A", hand: sortCards(deck.slice(54, 81)) },
+        { id: "right", name: "右手", team: "B", hand: sortCards(deck.slice(81, 108)) }
+      ];
+      return {
+        seats,
+        currentIndex: 0,
+        tablePlay: null,
+        passCount: 0,
+        round: 1,
+        finished: false,
+        winner: "",
+        log: ["开局发牌完成：你先手，队友坐对家。"]
+      };
+    }
+
+    function currentSeat(match) {
+      return match.seats[match.currentIndex];
+    }
+
+    function userSeat(match) {
+      return match.seats.find((seat) => seat.id === "me");
+    }
+
+    function describePlay(play) {
+      if (!play) return "本轮暂无牌型";
+      return `${play.player}：${play.label}`;
+    }
+
+    function availableUserActions(match) {
+      const hand = userSeat(match).hand;
+      return [
+        { key: "single", label: "出单张", play: findPlayable(hand, "single", match.tablePlay) },
+        { key: "pair", label: "出对子", play: findPlayable(hand, "pair", match.tablePlay) },
+        { key: "triplePair", label: "出三带二", play: findPlayable(hand, "triplePair", match.tablePlay) },
+        { key: "steel", label: "出钢板", play: findPlayable(hand, "steel", match.tablePlay) },
+        { key: "straight", label: "出顺子", play: findPlayable(hand, "straight", match.tablePlay) },
+        { key: "straightFlush", label: "出同花顺", play: findPlayable(hand, "straightFlush", match.tablePlay) },
+        { key: "bomb", label: "出炸弹", play: findPlayable(hand, "bomb", match.tablePlay) },
+        { key: "pass", label: "过牌", play: null }
+      ];
+    }
+
+    function recommendedMatchAction(match) {
+      const actions = availableUserActions(match);
+      if (!match.tablePlay) {
+        return actions.find((action) => action.key === "straight" && action.play)
+          || actions.find((action) => action.key === "straightFlush" && action.play)
+          || actions.find((action) => action.key === "steel" && action.play)
+          || actions.find((action) => action.key === "triplePair" && action.play)
+          || actions.find((action) => action.key === "pair" && action.play)
+          || actions.find((action) => action.key === "single" && action.play)
+          || actions.find((action) => action.key === "bomb" && action.play);
+      }
+      const current = match.tablePlay;
+      const sameType = actions.find((action) => action.key === current.type && action.play);
+      if (sameType) return sameType;
+      const flush = actions.find((action) => action.key === "straightFlush" && action.play);
+      if (current.type !== "straightFlush" && current.type !== "bomb" && flush) return flush;
+      const opponentLow = current.team !== "A" && match.seats.find((seat) => seat.id === current.playerId)?.hand.length <= 4;
+      const bomb = actions.find((action) => action.key === "bomb" && action.play);
+      if (opponentLow && bomb) return bomb;
+      return actions.find((action) => action.key === "pass");
+    }
+
+    function findPlayable(hand, type, tablePlay) {
+      const minPower = tablePlay && tablePlay.type === type ? tablePlay.power : -1;
+      if (tablePlay && tablePlay.type !== type && !specialCanOvertake(type, tablePlay)) return null;
+      if (type === "single") return findSingle(hand, minPower);
+      if (type === "pair") return findGroup(hand, 2, minPower, "对子");
+      if (type === "triplePair") return findTriplePair(hand, minPower);
+      if (type === "steel") return findSteel(hand, minPower);
+      if (type === "straight") return findStraight(hand, minPower, false);
+      if (type === "straightFlush") return findStraight(hand, tablePlay?.type === "straightFlush" ? tablePlay.power : -1, true);
+      return findBomb(hand, tablePlay?.type === "bomb" ? tablePlay.power : -1);
+    }
+
+    function specialCanOvertake(type, tablePlay) {
+      if (!tablePlay) return true;
+      if (type === "bomb") return true;
+      if (type === "straightFlush" && tablePlay.type !== "bomb") return true;
+      return false;
+    }
+
+    function findSingle(hand, minPower) {
+      const card = sortCards(hand).find((item) => rankStrength(item.rank) > minPower);
+      if (!card) return null;
+      return {
+        type: "single",
+        label: `单张 ${cardLabel(card)}`,
+        cards: [card],
+        power: rankStrength(card.rank)
+      };
+    }
+
+    function findGroup(hand, count, minPower, label) {
+      const groups = groupByRank(hand).filter((group) => group.cards.length >= count && rankStrength(group.rank) > minPower);
+      groups.sort((a, b) => rankStrength(a.rank) - rankStrength(b.rank));
+      const group = groups[0];
+      if (!group) return null;
+      return {
+        type: count >= 4 ? "bomb" : "pair",
+        label: `${label} ${group.rank}`,
+        cards: group.cards.slice(0, count),
+        power: rankStrength(group.rank)
+      };
+    }
+
+    function findTriplePair(hand, minPower) {
+      const groups = groupByRank(hand);
+      const triples = groups.filter((group) => group.cards.length >= 3 && rankStrength(group.rank) > minPower)
+        .sort((a, b) => rankStrength(a.rank) - rankStrength(b.rank));
+      for (const triple of triples) {
+        const pair = groups
+          .filter((group) => group.rank !== triple.rank && group.cards.length >= 2)
+          .sort((a, b) => rankStrength(a.rank) - rankStrength(b.rank))[0];
+        if (pair) {
+          return {
+            type: "triplePair",
+            label: `三带二 ${triple.rank}带${pair.rank}`,
+            cards: [...triple.cards.slice(0, 3), ...pair.cards.slice(0, 2)],
+            power: rankStrength(triple.rank)
+          };
+        }
+      }
+      return null;
+    }
+
+    function findSteel(hand, minPower) {
+      const groups = groupByRank(hand).filter((group) => group.cards.length >= 3 && STRAIGHT_RANKS.includes(group.rank));
+      for (let start = 0; start <= STRAIGHT_RANKS.length - 2; start += 1) {
+        const low = STRAIGHT_RANKS[start];
+        const high = STRAIGHT_RANKS[start + 1];
+        const lowGroup = groups.find((group) => group.rank === low);
+        const highGroup = groups.find((group) => group.rank === high);
+        const power = STRAIGHT_RANKS.indexOf(high);
+        if (lowGroup && highGroup && power > minPower) {
+          return {
+            type: "steel",
+            label: `钢板 ${low}-${high}`,
+            cards: [...lowGroup.cards.slice(0, 3), ...highGroup.cards.slice(0, 3)],
+            power
+          };
+        }
+      }
+      return null;
+    }
+
+    function findStraight(hand, minPower, flushOnly) {
+      const byRank = new Map();
+      for (const card of hand) {
+        if (!card.joker && STRAIGHT_RANKS.includes(card.rank) && !byRank.has(card.rank)) byRank.set(card.rank, card);
+      }
+      const suitRankCards = new Map();
+      for (const suit of SUITS) {
+        suitRankCards.set(suit.id, new Map());
+      }
+      for (const card of hand) {
+        if (!card.joker && STRAIGHT_RANKS.includes(card.rank) && !suitRankCards.get(card.suit).has(card.rank)) {
+          suitRankCards.get(card.suit).set(card.rank, card);
+        }
+      }
+      for (let start = 0; start <= STRAIGHT_RANKS.length - 5; start += 1) {
+        const ranks = STRAIGHT_RANKS.slice(start, start + 5);
+        const power = STRAIGHT_RANKS.indexOf(ranks[4]);
+        if (power <= minPower) continue;
+        if (flushOnly) {
+          for (const suit of SUITS) {
+            const map = suitRankCards.get(suit.id);
+            if (ranks.every((rank) => map.has(rank))) {
+              return {
+                type: "straightFlush",
+                label: `同花顺 ${suit.symbol}${ranks[0]}-${ranks[4]}`,
+                cards: ranks.map((rank) => map.get(rank)),
+                power
+              };
+            }
+          }
+          continue;
+        }
+        if (ranks.every((rank) => byRank.has(rank))) {
+          return {
+            type: "straight",
+            label: `顺子 ${ranks[0]}-${ranks[4]}`,
+            cards: ranks.map((rank) => byRank.get(rank)),
+            power
+          };
+        }
+      }
+      return null;
+    }
+
+    function findBomb(hand, minPower) {
+      const groups = groupByRank(hand)
+        .filter((group) => group.cards.length >= 4)
+        .map((group) => ({
+          group,
+          power: bombPower(group.rank, group.cards.length)
+        }))
+        .filter((item) => item.power > minPower)
+        .sort((a, b) => a.power - b.power);
+      const item = groups[0];
+      if (!item) return null;
+      return {
+        type: "bomb",
+        label: `${item.group.cards.length}头火 ${item.group.rank}`,
+        cards: item.group.cards.slice(0, item.group.cards.length),
+        power: item.power
+      };
+    }
+
+    function bombPower(rank, count) {
+      return count * 1000 + rankStrength(rank);
+    }
+
+    function groupByRank(hand) {
+      const map = new Map();
+      for (const card of hand) {
+        if (card.joker) continue;
+        if (!map.has(card.rank)) map.set(card.rank, []);
+        map.get(card.rank).push(card);
+      }
+      return [...map.entries()].map(([rank, cards]) => ({ rank, cards }));
+    }
+
+    function cardLabel(card) {
+      if (card.joker) return card.label;
+      return `${card.rank}${SUIT_MAP[card.suit].symbol}`;
+    }
+
+    function applyPlay(match, seat, play) {
+      if (!play) {
+        match.passCount += 1;
+        match.log.unshift(`${seat.name} 过牌`);
+        if (match.passCount >= 3 && match.tablePlay) {
+          const winnerIndex = match.seats.findIndex((item) => item.id === match.tablePlay.playerId);
+          match.currentIndex = winnerIndex;
+          match.tablePlay = null;
+          match.passCount = 0;
+          match.round += 1;
+          match.log.unshift(`${match.seats[winnerIndex].name} 收下本轮牌权`);
+          return;
+        }
+        match.currentIndex = (match.currentIndex + 1) % match.seats.length;
+        return;
+      }
+
+      seat.hand = removeCards(seat.hand, play.cards);
+      match.tablePlay = { ...play, player: seat.name, playerId: seat.id, team: seat.team };
+      match.passCount = 0;
+      match.log.unshift(`${seat.name} 出 ${play.label}`);
+      if (seat.hand.length === 0) {
+        match.finished = true;
+        match.winner = seat.name;
+        match.log.unshift(`${seat.name} 先跑完，本局结束`);
+        return;
+      }
+      match.currentIndex = (match.currentIndex + 1) % match.seats.length;
+    }
+
+    function removeCards(hand, cards) {
+      const remaining = [...hand];
+      for (const card of cards) {
+        const index = remaining.findIndex((item) =>
+          item.rank === card.rank && item.suit === card.suit && item.joker === card.joker && item.kind === card.kind
+        );
+        if (index >= 0) remaining.splice(index, 1);
+      }
+      return sortCards(remaining);
+    }
+
+    function advanceAiTurns(match) {
+      let guard = 0;
+      while (!match.finished && currentSeat(match).id !== "me" && guard < 12) {
+        const seat = currentSeat(match);
+        const play = chooseAiPlay(match, seat);
+        applyPlay(match, seat, play);
+        guard += 1;
+      }
+    }
+
+    function chooseAiPlay(match, seat) {
+      if (!match.tablePlay) {
+        if (state.difficulty === "easy" && Math.random() < 0.55) return findPlayable(seat.hand, "single", null);
+        return findPlayable(seat.hand, "straightFlush", null)
+          || findPlayable(seat.hand, "steel", null)
+          || findPlayable(seat.hand, "triplePair", null)
+          || findPlayable(seat.hand, "straight", null)
+          || findPlayable(seat.hand, "pair", null)
+          || findPlayable(seat.hand, "single", null)
+          || findPlayable(seat.hand, "bomb", null);
+      }
+
+      if (match.tablePlay.team === seat.team && state.difficulty !== "hard") return null;
+      const sameType = findPlayable(seat.hand, match.tablePlay.type, match.tablePlay);
+      if (sameType) return sameType;
+      const flush = findPlayable(seat.hand, "straightFlush", match.tablePlay);
+      if (flush && state.difficulty !== "easy") return flush;
+      const urgent = match.tablePlay.team !== seat.team
+        && match.seats.find((item) => item.id === match.tablePlay.playerId)?.hand.length <= (state.difficulty === "hard" ? 6 : 3);
+      if (urgent || state.difficulty === "hard") return findPlayable(seat.hand, "bomb", match.tablePlay);
+      return null;
+    }
+
+    function sortCards(cards) {
+      return [...cards].sort((a, b) => {
+        if (a.joker || b.joker) return rankStrength(a.rank) - rankStrength(b.rank);
+        const rankDelta = RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank);
+        if (rankDelta !== 0) return rankDelta;
+        return SUITS.findIndex((suit) => suit.id === a.suit) - SUITS.findIndex((suit) => suit.id === b.suit);
+      });
+    }
+
+    function cardHTML(card, large = false) {
+      if (card.joker) {
+        return `<span class="card joker ${card.kind === "small" ? "small" : ""} ${large ? "large-card" : ""}">
+          <b>${card.label}</b><em>${card.kind === "small" ? "小" : "大"}</em>
+        </span>`;
+      }
+      const suit = SUIT_MAP[card.suit];
+      const classes = ["card", suit.color, card.rank === state.levelRank ? "level" : "", large ? "large-card" : ""].join(" ");
+      return `<span class="${classes}"><b>${card.rank}</b><em>${suit.symbol}</em></span>`;
+    }
+
+    function matchCardHTML(card, index) {
+      const selected = state.selectedMatchCards.has(index);
+      if (card.joker) {
+        return `<button class="card selectable joker ${card.kind === "small" ? "small" : ""} ${selected ? "selected" : ""}" data-action="select-match-card" data-card-index="${index}">
+          <b>${card.label}</b><em>${card.kind === "small" ? "小" : "大"}</em>
+        </button>`;
+      }
+      const suit = SUIT_MAP[card.suit];
+      const classes = ["card", "selectable", suit.color, card.rank === state.levelRank ? "level" : "", selected ? "selected" : ""].join(" ");
+      return `<button class="${classes}" data-action="select-match-card" data-card-index="${index}"><b>${card.rank}</b><em>${suit.symbol}</em></button>`;
+    }
+
+    function playedCardHTML(card) {
+      return cardHTML(card).replace('class="card', 'class="card played-card');
+    }
+
+    function selectedMatchCards(match) {
+      const hand = userSeat(match).hand;
+      return [...state.selectedMatchCards]
+        .sort((a, b) => a - b)
+        .map((index) => hand[index])
+        .filter(Boolean);
+    }
+
+    function selectedMatchPlay(match) {
+      return classifySelectedPlay(selectedMatchCards(match), match.tablePlay);
+    }
+
+    function toggleMatchCard(index) {
+      if (!state.question || state.question.type !== "battle-match" || state.lastFeedback) return;
+      if (state.selectedMatchCards.has(index)) state.selectedMatchCards.delete(index);
+      else state.selectedMatchCards.add(index);
+      render();
+    }
+
+    function classifySelectedPlay(cards, tablePlay) {
+      if (!cards.length) return null;
+      const sorted = sortCards(cards);
+      let play = null;
+      if (cards.length === 1) {
+        play = { type: "single", label: `单张 ${cardLabel(sorted[0])}`, cards: sorted, power: rankStrength(sorted[0].rank) };
+      } else if (cards.length === 2 && sameNaturalRank(sorted)) {
+        play = { type: "pair", label: `对子 ${sorted[0].rank}`, cards: sorted, power: rankStrength(sorted[0].rank) };
+      } else if (cards.length === 5 && triplePairFromCards(sorted)) {
+        play = triplePairFromCards(sorted);
+      } else if (cards.length === 5 && isStraightCards(sorted)) {
+        const flush = sameSuit(sorted);
+        play = {
+          type: flush ? "straightFlush" : "straight",
+          label: `${flush ? "同花顺" : "顺子"} ${sorted[0].rank}-${sorted[sorted.length - 1].rank}`,
+          cards: sorted,
+          power: STRAIGHT_RANKS.indexOf(sorted[sorted.length - 1].rank)
+        };
+      } else if (cards.length === 6 && steelFromCards(sorted)) {
+        play = steelFromCards(sorted);
+      } else if (cards.length >= 4 && sameNaturalRank(sorted)) {
+        play = { type: "bomb", label: `${cards.length}头火 ${sorted[0].rank}`, cards: sorted, power: bombPower(sorted[0].rank, cards.length) };
+      }
+      if (!play) return null;
+      if (!canBeatTable(play, tablePlay)) return { ...play, invalid: true };
+      return play;
+    }
+
+    function triplePairFromCards(cards) {
+      const groups = groupByRank(cards);
+      const triple = groups.find((group) => group.cards.length === 3);
+      const pair = groups.find((group) => group.cards.length === 2);
+      if (!triple || !pair || groups.length !== 2) return null;
+      return {
+        type: "triplePair",
+        label: `三带二 ${triple.rank}带${pair.rank}`,
+        cards,
+        power: rankStrength(triple.rank)
+      };
+    }
+
+    function steelFromCards(cards) {
+      const groups = groupByRank(cards);
+      if (groups.length !== 2 || !groups.every((group) => group.cards.length === 3)) return null;
+      const indexes = groups.map((group) => STRAIGHT_RANKS.indexOf(group.rank)).sort((a, b) => a - b);
+      if (indexes.some((index) => index < 0) || indexes[1] - indexes[0] !== 1) return null;
+      const low = STRAIGHT_RANKS[indexes[0]];
+      const high = STRAIGHT_RANKS[indexes[1]];
+      return {
+        type: "steel",
+        label: `钢板 ${low}-${high}`,
+        cards,
+        power: indexes[1]
+      };
+    }
+
+    function sameNaturalRank(cards) {
+      return cards.every((card) => !card.joker && card.rank === cards[0].rank);
+    }
+
+    function sameSuit(cards) {
+      return cards.every((card) => !card.joker && card.suit === cards[0].suit);
+    }
+
+    function isStraightCards(cards) {
+      if (cards.some((card) => card.joker || !STRAIGHT_RANKS.includes(card.rank))) return false;
+      const indexes = [...new Set(cards.map((card) => STRAIGHT_RANKS.indexOf(card.rank)))].sort((a, b) => a - b);
+      return indexes.length === 5 && indexes[4] - indexes[0] === 4;
+    }
+
+    function canBeatTable(play, tablePlay) {
+      if (!tablePlay) return true;
+      if (tablePlay.type === "bomb") return play.type === "bomb" && play.power > tablePlay.power;
+      if (play.type === "bomb") return true;
+      if (tablePlay.type === "straightFlush") return play.type === "straightFlush" && play.power > tablePlay.power;
+      if (play.type === "straightFlush") return true;
+      return play.type === tablePlay.type && play.power > tablePlay.power;
+    }
+
+    function render() {
+      renderModeGrid();
+      renderHeader();
+      renderGoals();
+      renderHistory();
+      if (state.finished) {
+        renderSummary();
+        return;
+      }
+      if (!state.active || !state.question) {
+        renderEmpty();
+        return;
+      }
+      if (state.lastFeedback) {
+        renderFeedback();
+        return;
+      }
+      if (state.mode === "identify") renderIdentify();
+      if (state.mode === "compare") renderCompare();
+      if (state.mode === "voids") renderVoids();
+      if (state.mode === "memory") renderMemory();
+      if (state.mode === "battle") renderBattle();
+    }
+
+    function renderHeader() {
+      const config = MODE_CONFIG[state.mode];
+      const summary = summarizeAnswers(state.answers);
+      el.workTitle.textContent = config.label;
+      el.workSubtitle.textContent = config.subtitle;
+      el.metricMode.textContent = config.label;
+      el.metricTarget.textContent = config.target;
+      el.metricProgress.textContent = `${Math.min(state.index, state.total)}/${state.total}`;
+      el.metricLevel.textContent = state.mode === "battle"
+        ? `${state.battleMode === "match" ? "实战轮转" : "思维慢练"} · ${difficultyLabel(state.difficulty)}`
+        : `级牌 ${state.levelRank}`;
+      el.metricTime.textContent = `${(summary.avgMs / 1000 || 0).toFixed(1)}s`;
+      el.metricScore.textContent = String(summary.totalScore);
+      el.sessionAccuracy.textContent = `${summary.accuracy}%`;
+      el.roundChip.textContent = state.active ? `第 ${state.index} 题` : "未开始";
+      el.startBtn.textContent = state.active ? "重开本轮" : "开始训练";
+    }
+
+    function renderEmpty() {
+      el.timerChip.textContent = "0.0s";
+      renderGuide();
+    }
+
+    function renderGuide() {
+      const guide = GUIDE_CONTENT[state.mode];
+      el.questionArea.innerHTML = `
+        <div class="guide-state">
+          <section class="guide-band">
+            <div class="guide-copy">
+              <span class="tag">${MODE_CONFIG[state.mode].label}</span>
+              <h3>${guide.title}</h3>
+              <p>${guide.intro}</p>
+              <div class="tip-strip">
+                ${guide.tip}
+                <span>当前级牌：${state.levelRank}。开始前可以在左侧切换级牌和题量。</span>
+              </div>
+              <div class="answer-row">
+                <button class="answer-btn" data-action="restart">看懂了，开始练</button>
+              </div>
+            </div>
+            <div class="guide-steps">
+              ${guide.steps.map((step, index) => `
+                <div class="guide-step"><b>${index + 1}</b><span>${step}</span></div>
+              `).join("")}
+            </div>
+          </section>
+          ${state.mode === "battle" ? renderBattleModeSwitch() : ""}
+          <div class="rule-grid">
+            ${guide.rules.map(([title, body, example]) => `
+              <section class="rule-tile">
+                <strong>${title}</strong>
+                ${guideExampleHTML(example)}
+                <p>${body}</p>
+              </section>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function guideExampleHTML(example) {
+      if (!example || !example.length) return "";
+      return `<div class="mini-hand">${example.map((spec) => miniCardHTML(parseGuideCard(spec))).join("")}</div>`;
+    }
+
+    function parseGuideCard(spec) {
+      if (spec === "BJ") return { rank: "BJ", label: "大王", color: "red", joker: true, kind: "big" };
+      if (spec === "SJ") return { rank: "SJ", label: "小王", color: "black", joker: true, kind: "small" };
+      const match = spec.match(/^(LEVEL|10|[3-9JQKA2])([SHCD])$/);
+      const rank = match[1] === "LEVEL" ? state.levelRank : match[1];
+      const suit = SUIT_MAP[match[2]];
+      return { rank, suit: suit.id, color: suit.color, joker: false };
+    }
+
+    function miniCardHTML(card) {
+      if (card.joker) return `<span class="mini-card joker">${card.kind === "small" ? "小王" : "大王"}</span>`;
+      const suit = SUIT_MAP[card.suit];
+      return `<span class="mini-card ${suit.color}"><b>${card.rank}</b><em>${suit.symbol}</em></span>`;
+    }
+
+    function renderCompare() {
+      const q = state.question;
+      el.questionArea.innerHTML = `
+        <div class="prompt-line">
+          <span class="tag">${q.title}</span>
+          <span>${q.rule}</span>
+        </div>
+        <div class="compare-grid">
+          <section class="hand-panel">
+            <h3>左手</h3>
+            <div class="hand">${q.left.map((card) => cardHTML(card)).join("")}</div>
+          </section>
+          <section class="hand-panel">
+            <h3>右手</h3>
+            <div class="hand">${q.right.map((card) => cardHTML(card)).join("")}</div>
+          </section>
+        </div>
+        <div class="answer-row">
+          <button class="answer-btn" data-action="answer-compare" data-answer="left">左手更大</button>
+          <button class="answer-btn secondary" data-action="answer-compare" data-answer="right">右手更大</button>
+        </div>
+      `;
+    }
+
+    function renderIdentify() {
+      const q = state.question;
+      el.questionArea.innerHTML = `
+        <div class="prompt-line">
+          <span class="tag">27 张理牌</span>
+          <span>按首版口径统计：不把逢人配当万能牌，顺子按 5 张连续窗口计算。</span>
+        </div>
+        <section class="hand-panel">
+          <h3>当前手牌</h3>
+          <div class="hand">${q.hand.map((card) => cardHTML(card)).join("")}</div>
+        </section>
+        <div class="memory-inputs">
+          ${IDENTIFY_FIELDS.map((field) => `
+            <div class="memory-input">
+              <label for="identify-${field.key}">${field.label}（${field.unit}）</label>
+              <input id="identify-${field.key}" data-identify-key="${field.key}" type="number" min="0" max="30" inputmode="numeric">
+            </div>
+          `).join("")}
+        </div>
+        <div class="answer-row">
+          <button class="answer-btn" data-action="submit-identify">提交牌型统计</button>
+        </div>
+      `;
+    }
+
+    function renderVoids() {
+      const q = state.question;
+      el.questionArea.innerHTML = `
+        <div class="prompt-line">
+          <span class="tag">断张识别</span>
+          <span>选出这 27 张手牌里完全没有出现的点数。</span>
+        </div>
+        <section class="hand-panel">
+          <h3>当前手牌</h3>
+          <div class="hand">${q.hand.map((card) => cardHTML(card)).join("")}</div>
+        </section>
+        <div class="rank-grid">
+          ${RANKS.map((rank) => `
+            <button class="rank-chip ${state.selectedRanks.has(rank) ? "active" : ""}" data-action="toggle-rank" data-rank="${rank}">
+              ${rank}
+            </button>
+          `).join("")}
+        </div>
+        <div class="answer-row">
+          <button class="answer-btn" data-action="submit-voids">提交断张</button>
+        </div>
+      `;
+    }
+
+    function renderMemory() {
+      const q = state.question;
+      if (q.phase === "ready") {
+        el.questionArea.innerHTML = `
+          <div class="prompt-line">
+            <span class="tag">核心大牌</span>
+            <span>本题将连续翻 20 张牌，结束后填写剩余张数。</span>
+          </div>
+          <div class="memory-stage">
+            <strong>准备翻牌</strong>
+            <p class="memory-progress">大小王、2、级牌、A、K</p>
+            <div class="answer-row" style="justify-content: center;">
+              <button class="answer-btn" data-action="start-memory">开始翻牌</button>
+              <button class="answer-btn secondary" data-action="skip-memory">直接答题</button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (q.phase === "watching") {
+        const current = q.revealed[q.cursor];
+        el.questionArea.innerHTML = `
+          <div class="prompt-line">
+            <span class="tag">翻牌中</span>
+            <span>保持节奏，不回看。</span>
+          </div>
+          <div class="memory-stage">
+            ${cardHTML(current, true)}
+            <p class="memory-progress">${q.cursor + 1} / ${q.revealed.length}</p>
+          </div>
+        `;
+        return;
+      }
+
+      el.questionArea.innerHTML = `
+        <div class="prompt-line">
+          <span class="tag">剩余张数</span>
+          <span>填写每类牌还剩多少张没有出现。</span>
+        </div>
+        <div class="memory-inputs">
+          ${q.focus.map((item) => `
+            <div class="memory-input">
+              <label for="memory-${cssSafe(item.key)}">${item.label}</label>
+              <input id="memory-${cssSafe(item.key)}" data-memory-key="${item.key}" type="number" min="0" max="8" inputmode="numeric">
+            </div>
+          `).join("")}
+        </div>
+        <div class="answer-row">
+          <button class="answer-btn" data-action="submit-memory">提交记牌结果</button>
+        </div>
+      `;
+    }
+
+    function renderBattle() {
+      const q = state.question;
+      if (q.type === "battle-match") {
+        renderBattleMatch(q.match);
+        return;
+      }
+      el.questionArea.innerHTML = `
+        ${renderBattleModeSwitch()}
+        <div class="prompt-line">
+          <span class="tag">模拟对战</span>
+          <span>${q.title}</span>
+        </div>
+        <div class="battle-layout">
+          <section class="table-map">
+            <div class="seat-grid">
+              <div class="seat"><strong>左手</strong><span>${q.seats[0]}</span></div>
+              <div class="seat"><strong>队友</strong><span>${q.seats[1]}</span></div>
+              <div class="seat"><strong>右手</strong><span>${q.seats[2]}</span></div>
+            </div>
+            <div class="scenario-panel">
+              <h3>局势</h3>
+              <p>${q.situation}</p>
+            </div>
+            <section class="hand-panel">
+              <h3>你的手牌</h3>
+              <div class="hand">${q.hand.map((card) => cardHTML(card)).join("")}</div>
+            </section>
+          </section>
+          <aside class="scenario-panel">
+            <h3>选择你的动作</h3>
+            <p>按“队友优先、同牌型优先、关键轮才动炸”的原则判断。</p>
+            <div class="choice-list">
+              ${q.choices.map(([value, label]) => `
+                <button class="choice-btn" data-action="answer-battle" data-answer="${value}">${label}</button>
+              `).join("")}
+            </div>
+          </aside>
+        </div>
+      `;
+    }
+
+    function renderBattleModeSwitch() {
+      return `
+        <div class="battle-switch">
+          <button class="${state.battleMode === "decision" ? "active" : ""}" data-action="set-battle-mode" data-battle-mode="decision">思维慢练</button>
+          <button class="${state.battleMode === "match" ? "active" : ""}" data-action="set-battle-mode" data-battle-mode="match">实战轮转</button>
+        </div>
+      `;
+    }
+
+    function renderBattleMatch(match) {
+      const user = userSeat(match);
+      const recommended = recommendedMatchAction(match);
+      const actions = availableUserActions(match);
+      const selectedPlay = selectedMatchPlay(match);
+      const selectedLabel = selectedPlay
+        ? selectedPlay.invalid ? `${selectedPlay.label}，但压不过桌面` : selectedPlay.label
+        : state.selectedMatchCards.size ? "选牌暂不成牌型" : "点击手牌选择";
+      el.questionArea.innerHTML = `
+        ${renderBattleModeSwitch()}
+        <div class="prompt-line">
+          <span class="tag">四人实战轮转</span>
+          <span>第 ${match.round} 轮 · ${difficultyLabel(state.difficulty)}对手 · 当前轮：${describePlay(match.tablePlay)}</span>
+        </div>
+        <div class="battle-layout">
+          <section class="table-map">
+            <div class="seat-grid">
+              ${match.seats.map((seat) => `
+                <div class="seat ${seat.id === "me" ? "me" : ""} ${seat.id === currentSeat(match).id ? "active" : ""}">
+                  <strong>${seat.name}</strong>
+                  <span>${seat.team === "A" ? "我方" : "对手"} · ${seat.hand.length} 张</span>
+                </div>
+              `).join("")}
+            </div>
+            <div class="scenario-panel">
+              <h3>桌面牌权</h3>
+              <div class="table-play-zone">
+                <p>${match.tablePlay ? `${match.tablePlay.player} 出了 ${match.tablePlay.label}` : "你当前先手，可以主动选择牌型。"}</p>
+                <div class="hand">${match.tablePlay ? match.tablePlay.cards.map((card) => playedCardHTML(card)).join("") : ""}</div>
+              </div>
+            </div>
+            <section class="hand-panel">
+              <h3>你的手牌</h3>
+              <div class="hand match-hand">${user.hand.map((card, index) => matchCardHTML(card, index)).join("")}</div>
+            </section>
+          </section>
+          <aside class="scenario-panel">
+            <h3>出牌区</h3>
+            <p>已选：${selectedLabel}</p>
+            <div class="match-actions">
+              <button class="answer-btn" data-action="play-selected">出选中牌</button>
+              <button class="answer-btn secondary" data-action="match-action" data-match-action="pass">过牌</button>
+              <button class="ghost-action" data-action="clear-selected">清空选择</button>
+            </div>
+            <div class="play-stack">
+              <div class="play-card"><strong>智能建议</strong><span>${recommended ? `${recommended.label}${recommended.play ? ` · ${recommended.play.label}` : ""}` : "暂无可出牌型"}</span></div>
+              <div class="play-card"><strong>已支持牌型</strong><span>单张、对子、三带二、钢板、顺子、同花顺、4头以上炸弹</span></div>
+              <div class="play-card"><strong>对手难度</strong><span>${difficultyDescription(state.difficulty)}</span></div>
+            </div>
+            <details>
+              <summary>快捷出牌</summary>
+              <div class="choice-list" style="margin-top: 9px;">
+                ${actions.filter((action) => action.key !== "pass").map((action) => `
+                  <button class="choice-btn" data-action="match-action" data-match-action="${action.key}">
+                    ${action.label}${action.play ? ` · ${action.play.label}` : " · 暂无"}
+                  </button>
+                `).join("")}
+              </div>
+            </details>
+          </aside>
+        </div>
+        <section class="scenario-panel">
+          <h3>最近动作</h3>
+          <div class="match-log">${match.log.slice(0, 8).map((line) => `<div>${line}</div>`).join("")}</div>
+        </section>
+      `;
+    }
+
+    function difficultyDescription(value) {
+      if (value === "easy") return "更常放过，少用炸弹，适合先熟悉轮转。";
+      if (value === "hard") return "更积极拦截，会在关键轮动炸弹。";
+      return "按同牌型优先、关键轮再炸的普通策略。";
+    }
+
+    function renderFeedback() {
+      const fb = state.lastFeedback;
+      const isLast = state.index >= state.total;
+      el.questionArea.innerHTML = `
+        <div class="feedback ${fb.correct ? "good" : "bad"}">
+          <strong>${fb.correct ? "正确" : "需要复盘"} · ${fb.score} 分 · ${fb.correctCount}/${fb.totalCount} 项</strong>
+          <p>${fb.message}</p>
+          ${fb.answerKey ? `<div class="answer-key"><strong>正确答案</strong>${fb.answerKey}</div>` : ""}
+          ${reviewDetailsHTML(fb)}
+          <div class="coach-card">
+            <strong>下一次这样想</strong>
+            <p>${fb.coach}</p>
+          </div>
+          <p>用时 ${(fb.elapsedMs / 1000).toFixed(1)} 秒</p>
+        </div>
+        <div class="answer-row">
+          <button class="answer-btn" data-action="${fb.continueMatch ? "continue-match" : "next-question"}">${fb.continueMatch ? "继续对局" : isLast ? "查看总结" : "下一题"}</button>
+        </div>
+      `;
+    }
+
+    function reviewDetailsHTML(fb) {
+      if (!fb.breakdown || !fb.breakdown.length) return "";
+      return `
+        <div class="review-grid">
+          ${fb.breakdown.map((item) => `
+            <div class="review-item ${item.ok ? "good" : "bad"}">
+              <strong>${item.ok ? "对" : "错"} · ${item.label}</strong>
+              <span class="review-meta">你的答案：${item.user} ｜ 标准：${item.expected}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderSummary() {
+      const summary = summarizeAnswers(state.answers);
+      el.timerChip.textContent = "完成";
+      el.questionArea.innerHTML = `
+        <div class="result-state">
+          <div class="result-box">
+            <h3>本轮完成</h3>
+            <p>${MODE_CONFIG[state.mode].label} · 级牌 ${state.levelRank}</p>
+            <div class="summary-grid">
+              <div class="summary-cell"><span>正确率</span><strong>${summary.accuracy}%</strong></div>
+              <div class="summary-cell"><span>平均分</span><strong>${summary.avgScore}</strong></div>
+              <div class="summary-cell"><span>平均用时</span><strong>${(summary.avgMs / 1000).toFixed(1)}s</strong></div>
+            </div>
+            <div class="coach-card" style="text-align: left; margin-bottom: 14px;">
+              <strong>本轮复盘</strong>
+              <p>${sessionCoach(summary)}</p>
+            </div>
+            <div class="answer-row" style="justify-content: center;">
+              <button class="answer-btn" data-action="restart">再练一轮</button>
+              ${state.mode === "battle" ? "" : `<button class="answer-btn gold" data-action="go-battle">进入模拟对战</button>`}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderHistory() {
+      if (!state.history.length) {
+        el.historyList.innerHTML = `<div class="history-row"><strong>暂无记录</strong><span>开始一轮</span></div>`;
+        return;
+      }
+      el.historyList.innerHTML = `
+        ${state.history.slice(0, 8).map((item) => {
+          const config = MODE_CONFIG[item.mode] || MODE_CONFIG.compare;
+          return `
+            <div class="history-row">
+              <strong>${config.label} · ${item.accuracy}%</strong>
+              <span>${formatDate(item.date)}</span>
+            </div>
+          `;
+        }).join("")}
+        <button class="ghost-action danger-action" data-action="clear-history">清空记录</button>
+      `;
+    }
+
+    function renderGoals() {
+      const goals = {
+        identify: bestAccuracy("identify"),
+        compare: bestAccuracy("compare"),
+        memory: bestAccuracy("memory"),
+        voids: bestAccuracy("voids"),
+        battle: bestAccuracy("battle")
+      };
+      setGoal(el.goalIdentifyText, el.goalIdentifyBar, goals.identify);
+      setGoal(el.goalCompareText, el.goalCompareBar, goals.compare);
+      setGoal(el.goalMemoryText, el.goalMemoryBar, goals.memory);
+      setGoal(el.goalVoidText, el.goalVoidBar, goals.voids);
+      setGoal(el.goalBattleText, el.goalBattleBar, goals.battle);
+    }
+
+    function setGoal(textEl, barEl, value) {
+      textEl.textContent = `${value}%`;
+      barEl.style.setProperty("--value", `${Math.min(100, value)}%`);
+    }
+
+    function submitCompare(answer) {
+      const q = state.question;
+      const correct = answer === q.answer;
+      const userText = answer === "left" ? "左手更大" : "右手更大";
+      const expectedText = q.answer === "left" ? "左手更大" : "右手更大";
+      recordAnswer({
+        correct,
+        score: correct ? 100 : 0,
+        correctCount: correct ? 1 : 0,
+        totalCount: 1,
+        message: `${q.explanation} ${q.rule}`,
+        answerKey: expectedText,
+        coach: "先确认两边是不是同牌型，再只抓一个关键点：对子看对子点数，夯看三张点数，顺子看最大张，炸弹看头数和点数。",
+        breakdown: [{ label: q.title, user: userText, expected: expectedText, ok: correct }]
+      });
+    }
+
+    function submitIdentify() {
+      const inputs = [...document.querySelectorAll("[data-identify-key]")];
+      let correctFields = 0;
+      const parts = [];
+      const misses = [];
+      const breakdown = [];
+
+      for (const input of inputs) {
+        const key = input.dataset.identifyKey;
+        const field = IDENTIFY_FIELDS.find((item) => item.key === key);
+        const raw = input.value.trim();
+        const answer = raw === "" ? Number.NaN : Number(raw);
+        const expected = state.question.expected[key];
+        if (answer === expected) correctFields += 1;
+        else misses.push(field.label);
+        breakdown.push({
+          label: field.label,
+          user: Number.isNaN(answer) ? "未填" : `${answer}${field.unit}`,
+          expected: `${expected}${field.unit}`,
+          ok: answer === expected
+        });
+        parts.push(`${field.label} ${expected}${field.unit}`);
+      }
+
+      const correct = correctFields === IDENTIFY_FIELDS.length;
+      const score = Math.round((correctFields / IDENTIFY_FIELDS.length) * 100);
+      const message = correct
+        ? "牌型结构统计完全正确。"
+        : `你答对 ${correctFields} 项，答错 ${IDENTIFY_FIELDS.length - correctFields} 项。重点复盘：${misses.join("、")}。`;
+      recordAnswer({
+        correct,
+        score,
+        correctCount: correctFields,
+        totalCount: IDENTIFY_FIELDS.length,
+        message,
+        answerKey: parts.join("，"),
+        coach: "理牌顺序建议固定：先找四张以上炸弹，再找同花连续五张，然后找普通顺子，最后数三张、对子、孤张。顺序固定后，速度自然会上来。",
+        breakdown
+      });
+    }
+
+    function toggleRank(rank) {
+      if (state.selectedRanks.has(rank)) state.selectedRanks.delete(rank);
+      else state.selectedRanks.add(rank);
+      render();
+    }
+
+    function submitVoids() {
+      const expected = new Set(state.question.expected);
+      const selected = state.selectedRanks;
+      const missed = [...expected].filter((rank) => !selected.has(rank));
+      const extra = [...selected].filter((rank) => !expected.has(rank));
+      const correctSelected = [...selected].filter((rank) => expected.has(rank));
+      const correct = missed.length === 0 && extra.length === 0;
+      const penalty = (missed.length + extra.length) * 22;
+      const score = Math.max(0, 100 - penalty);
+      const expectedText = state.question.expected.length ? state.question.expected.join("、") : "无断张";
+      const detail = correct ? "断张识别完全正确。" : `标准断张：${expectedText}。漏选 ${missed.length} 个，多选 ${extra.length} 个。`;
+      const breakdown = [
+        { label: "正确选中", user: correctSelected.length ? correctSelected.join("、") : "无", expected: "属于断张", ok: true },
+        { label: "漏选", user: missed.length ? missed.join("、") : "无", expected: "应选出来", ok: missed.length === 0 },
+        { label: "多选", user: extra.length ? extra.join("、") : "无", expected: "不应选择", ok: extra.length === 0 }
+      ];
+      recordAnswer({
+        correct,
+        score,
+        correctCount: expected.size - missed.length,
+        totalCount: Math.max(expected.size, 1),
+        message: detail,
+        answerKey: `本题断张：${expectedText}`,
+        coach: "看断张时不要逐张背牌，按点数扫一遍：3 到 A、再看 2。先标 10 以上断张，因为它们更影响炸弹和冲刺防守。",
+        breakdown
+      });
+    }
+
+    function startMemoryReveal() {
+      const q = state.question;
+      q.phase = "watching";
+      q.cursor = 0;
+      render();
+      clearInterval(state.memoryTimerId);
+      state.memoryTimerId = setInterval(() => {
+        if (!state.question || state.question.type !== "memory") return;
+        state.question.cursor += 1;
+        if (state.question.cursor >= state.question.revealed.length) {
+          showMemoryInputs();
+          return;
+        }
+        renderMemory();
+      }, 620);
+    }
+
+    function showMemoryInputs() {
+      clearInterval(state.memoryTimerId);
+      if (!state.question) return;
+      state.question.phase = "answering";
+      state.questionStartedAt = performance.now();
+      render();
+    }
+
+    function submitMemory() {
+      const inputs = [...document.querySelectorAll("[data-memory-key]")];
+      let correctFields = 0;
+      const parts = [];
+      const breakdown = [];
+      for (const input of inputs) {
+        const key = input.dataset.memoryKey;
+        const label = state.question.focus.find((item) => item.key === key).label;
+        const raw = input.value.trim();
+        const answer = raw === "" ? Number.NaN : Number(raw);
+        const expected = state.question.expected[key];
+        if (answer === expected) correctFields += 1;
+        breakdown.push({
+          label,
+          user: Number.isNaN(answer) ? "未填" : `${answer}张`,
+          expected: `${expected}张`,
+          ok: answer === expected
+        });
+        parts.push(`${label} ${expected}`);
+      }
+      const correct = correctFields === inputs.length;
+      const score = Math.round((correctFields / inputs.length) * 100);
+      recordAnswer({
+        correct,
+        score,
+        correctCount: correctFields,
+        totalCount: inputs.length,
+        message: correct ? "核心大牌剩余张数全部正确。" : `你答对 ${correctFields} 项，答错 ${inputs.length - correctFields} 项。标准答案：${parts.join("，")}。`,
+        answerKey: parts.join("，"),
+        coach: "记牌时只开一个小账本：王、2、级牌、A、K。看到一张就在脑子里减一，不要同时试图记所有小牌。",
+        breakdown
+      });
+    }
+
+    function submitBattle(answer) {
+      const q = state.question;
+      const correct = answer === q.answer;
+      const picked = q.choices.find(([value]) => value === answer);
+      const expected = q.choices.find(([value]) => value === q.answer);
+      recordAnswer({
+        correct,
+        score: correct ? 100 : 35,
+        correctCount: correct ? 1 : 0,
+        totalCount: 1,
+        message: `${correct ? "选择合理" : `你的选择是“${picked ? picked[1] : "未知动作"}”`}。${q.explanation}`,
+        answerKey: expected ? expected[1] : "无",
+        coach: "模拟对战先按三步想：谁快跑完、队友需不需要我接、能不能不用炸弹解决。只有同牌型接不住且局势关键时，再动炸弹。",
+        breakdown: [{
+          label: q.title,
+          user: picked ? picked[1] : "未知动作",
+          expected: expected ? expected[1] : "无",
+          ok: correct
+        }]
+      });
+    }
+
+    function submitSelectedMatchCards() {
+      const match = state.question.match;
+      const play = selectedMatchPlay(match);
+      const recommended = recommendedMatchAction(match);
+      const selectedText = state.selectedMatchCards.size ? `${state.selectedMatchCards.size} 张牌` : "未选牌";
+
+      if (!play) {
+        recordAnswer({
+          correct: false,
+          score: 20,
+          correctCount: 0,
+          totalCount: 1,
+          message: "当前选牌还不能组成首版支持的牌型。",
+          answerKey: recommended ? `${recommended.label}${recommended.play ? `：${recommended.play.label}` : ""}` : "暂无推荐动作",
+          coach: "实战轮转当前支持单张、对子、5 张顺子和炸弹。先点选能组成这些牌型的牌，再出牌。",
+          breakdown: [{ label: "选中牌", user: selectedText, expected: "单张 / 对子 / 顺子 / 炸弹", ok: false }],
+          continueMatch: true
+        });
+        return;
+      }
+
+      if (play.invalid) {
+        recordAnswer({
+          correct: false,
+          score: 30,
+          correctCount: 0,
+          totalCount: 1,
+          message: "这手牌型成立，但压不过桌面当前牌。",
+          answerKey: recommended ? `${recommended.label}${recommended.play ? `：${recommended.play.label}` : ""}` : "暂无推荐动作",
+          coach: "先看桌面牌型：同牌型要更大才能接；如果桌面是炸弹，只能用更大的炸弹接。",
+          breakdown: [{ label: "选中牌", user: play.label, expected: "能压过桌面牌", ok: false }],
+          continueMatch: true
+        });
+        return;
+      }
+
+      const user = userSeat(match);
+      const samePlan = recommended?.key === play.type;
+      const samePower = !recommended?.play || recommended.play.power === play.power;
+      const correct = Boolean(samePlan && samePower);
+      const score = correct ? 100 : samePlan ? 82 : 62;
+      applyPlay(match, user, play);
+      state.selectedMatchCards = new Set();
+      advanceAiTurns(match);
+      const finished = match.finished || state.answers.length + 1 >= state.total;
+      if (finished) state.index = state.total;
+      recordAnswer({
+        correct,
+        score,
+        correctCount: correct ? 1 : 0,
+        totalCount: 1,
+        message: correct ? "这手选牌和推荐节奏一致。" : "这手牌可以出，但不是当前最稳的节奏。",
+        answerKey: recommended ? `${recommended.label}${recommended.play ? `：${recommended.play.label}` : ""}` : "暂无推荐动作",
+        coach: "点选出牌时，先追求“刚好能接、少浪费牌力”。能用对子接就别炸，能用小牌拿下就别交大牌。",
+        breakdown: [{
+          label: "选中出牌",
+          user: play.label,
+          expected: recommended ? `${recommended.label}${recommended.play ? `：${recommended.play.label}` : ""}` : "无",
+          ok: correct
+        }],
+        continueMatch: !finished
+      });
+    }
+
+    function submitMatchAction(actionKey) {
+      const match = state.question.match;
+      const actions = availableUserActions(match);
+      const action = actions.find((item) => item.key === actionKey);
+      const recommended = recommendedMatchAction(match);
+      const user = userSeat(match);
+      let correct = actionKey === recommended?.key;
+      let score = correct ? 100 : 55;
+      let message = "";
+
+      if (!action) return;
+      if (actionKey === "pass" && !match.tablePlay) {
+        correct = false;
+        score = 20;
+        message = "你当前先手，不能过牌。先出小单、对子或顺子建立牌权。";
+      } else if (actionKey !== "pass" && !action.play) {
+        correct = false;
+        score = 25;
+        message = "这个牌型当前出不了，可能是手里没有，或者压不过桌面牌。";
+      } else {
+        applyPlay(match, user, actionKey === "pass" ? null : action.play);
+        state.selectedMatchCards = new Set();
+        advanceAiTurns(match);
+        message = correct
+          ? "这步节奏合理。"
+          : `这步可以走，但更推荐“${recommended ? recommended.label : "过牌"}”。`;
+      }
+
+      const finished = match.finished || state.answers.length + 1 >= state.total;
+      if (finished) state.index = state.total;
+      recordAnswer({
+        correct,
+        score,
+        correctCount: correct ? 1 : 0,
+        totalCount: 1,
+        message,
+        answerKey: recommended ? `${recommended.label}${recommended.play ? `：${recommended.play.label}` : ""}` : "暂无推荐动作",
+        coach: match.finished
+          ? `${match.winner} 已先出完。下一步可以复盘你是否过早动炸弹、是否帮队友保留了牌权。`
+          : "实战轮转先抓三件事：自己能不能自然接、队友是否在走牌、对手是否快冲刺。不要只看自己一手牌漂亮不漂亮。",
+        breakdown: [{
+          label: "本轮动作",
+          user: action.label,
+          expected: recommended ? recommended.label : "无",
+          ok: correct
+        }],
+        continueMatch: !finished
+      });
+    }
+
+    function continueMatch() {
+      clearTimers();
+      state.lastFeedback = null;
+      state.selectedMatchCards = new Set();
+      if (!state.question || state.question.type !== "battle-match" || state.question.match.finished || state.answers.length >= state.total) {
+        finishSession();
+        return;
+      }
+      state.index = Math.min(state.answers.length + 1, state.total);
+      state.questionStartedAt = performance.now();
+      startQuestionTimer();
+      render();
+    }
+
+    function recordAnswer(result) {
+      const elapsedMs = Math.round(performance.now() - state.questionStartedAt);
+      const answer = {
+        mode: state.mode,
+        correct: result.correct,
+        score: result.score,
+        elapsedMs,
+        correctCount: result.correctCount ?? (result.correct ? 1 : 0),
+        totalCount: result.totalCount ?? 1
+      };
+      state.answers.push(answer);
+      state.lastFeedback = {
+        correct: result.correct,
+        score: result.score,
+        elapsedMs,
+        message: result.message,
+        correctCount: result.correctCount ?? (result.correct ? 1 : 0),
+        totalCount: result.totalCount ?? 1,
+        answerKey: result.answerKey || "",
+        coach: result.coach || "先把规则判断拆成固定步骤，再追求速度。",
+        breakdown: result.breakdown || [],
+        continueMatch: Boolean(result.continueMatch)
+      };
+      clearTimers();
+      render();
+    }
+
+    function summarizeAnswers(answers) {
+      if (!answers.length) return { totalScore: 0, accuracy: 0, avgScore: 0, avgMs: 0, questionCorrect: 0, questionTotal: 0 };
+      const totalScore = answers.reduce((sum, item) => sum + item.score, 0);
+      const correct = answers.filter((item) => item.correct).length;
+      const avgMs = Math.round(answers.reduce((sum, item) => sum + item.elapsedMs, 0) / answers.length);
+      return {
+        totalScore,
+        accuracy: Math.round((correct / answers.length) * 100),
+        avgScore: Math.round(totalScore / answers.length),
+        avgMs,
+        questionCorrect: correct,
+        questionTotal: answers.length
+      };
+    }
+
+    function sessionCoach(summary) {
+      if (summary.questionTotal === 0) return "先完成一轮训练，再看复盘建议。";
+      if (summary.accuracy >= 90) return "这一轮很稳，可以把题量加到 10 题，或者进入模拟对战，把规则反应迁移到实战决策。";
+      if (summary.accuracy >= 70) return "基础方向对了。下一轮别急着提速，优先复盘错题里的共同点，尤其是漏数、误判关键张、过早动炸弹。";
+      return "先降速练准确率。每题按固定顺序判断：看牌型、找关键张、确认队友/对手状态，再提交答案。";
+    }
+
+    function bestAccuracy(mode) {
+      const candidates = state.history.filter((item) => item.mode === mode).map((item) => item.accuracy);
+      if (state.mode === mode && state.answers.length) candidates.push(summarizeAnswers(state.answers).accuracy);
+      return candidates.length ? Math.max(...candidates) : 0;
+    }
+
+    function startQuestionTimer() {
+      updateTimer();
+      state.timerId = setInterval(updateTimer, 200);
+    }
+
+    function updateTimer() {
+      if (!state.active || state.lastFeedback || !state.questionStartedAt) return;
+      const elapsed = (performance.now() - state.questionStartedAt) / 1000;
+      el.timerChip.textContent = `${elapsed.toFixed(1)}s`;
+    }
+
+    function clearTimers() {
+      clearInterval(state.timerId);
+      clearInterval(state.memoryTimerId);
+      state.timerId = null;
+      state.memoryTimerId = null;
+    }
+
+    function loadHistory() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveHistory() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.history));
+    }
+
+    function clearHistory() {
+      state.history = [];
+      saveHistory();
+      render();
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+      return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    }
+
+    function cssSafe(value) {
+      return value.replace(/[^a-z0-9_-]/gi, "-");
+    }
+
+    init();
+  </script>
+</body>
+</html>
